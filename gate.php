@@ -180,7 +180,7 @@ class Drew
     $customer_id = str_replace('gid://shopify/Customer/', '', $resp['data']['order']['customer']['id']);
 
     foreach ($nodes as $item) {
-      if ($item['product']['metafield']['value'] === "true") {
+      if ($item['product']['metafields']['edges'][0]['node']['value'] === "true") {
         for ($i = 0; $i < $item['quantity']; $i++) {
           $replacementId = $item['product']['metafields']['edges'][2]['node']['value'];
           $product_id = str_replace('gid://shopify/Product/', '', $item['product']['id']);
