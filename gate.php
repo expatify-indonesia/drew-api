@@ -256,8 +256,8 @@ class Drew
 
     $attr = array(
       "userId" => $customer_id,
-      "email" => $resp['data']['order']['email'],
       "traits" => array(
+        "email" => $resp['data']['order']['email'],
         "name" => $resp['data']['order']['customer']['displayName'],
         "products" => $product_details
       )
