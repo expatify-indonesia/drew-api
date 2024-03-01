@@ -93,6 +93,22 @@ class Drew
     exit(0);
   }
 
+  public function getTimeline($post)
+  {
+    $post = $this->clean($post);
+    $resp = array();
+
+    $data = $this->data->query("SELECT * FROM tb_timelines WHERE `idAdded` = '{$post['idAdded']}' ORDER BY `date` DESC");
+
+    while ($row = mysqli_fetch_assoc($data)) {
+      $resp[] = $row;
+    }
+
+    header("Content-Type: application/json; charset=UTF-8");
+    echo json_encode($resp);
+    exit(0);
+  }
+
   public function check_serial_number($post)
   {
     $post = $this->clean($post);
