@@ -135,6 +135,32 @@ class Drew
     exit(0);
   }
 
+  public function cuPersonCustomerIo($identifier, $email)
+  {
+    $site_id = 'e16f20bacb7f6388a1d0';
+    $api_key = 'a0e0b045e1194ed5196b';
+
+    $data = array(
+      'id' => $identifier,
+      'email' => $email
+    );
+
+    $json_data = json_encode($data);
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://track.customer.io/api/v1/customers/{$identifier}");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+      'Authorization: Basic ' . base64_encode("$site_id:$api_key"),
+      'Content-Type: application/json'
+    ));
+
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $json_data);
+    $response = curl_exec($ch);
+    curl_close($ch);
+  }
+
   public function addProduct($post)
   {
     $post = $this->clean($post);
@@ -148,14 +174,20 @@ class Drew
       // Update serial number status
       $this->data->query("UPDATE `tb_serial_numbers` SET `status` = 'used' WHERE `serial_number` = '{$post['serial_number']}'");
 
+      $serialDates = mysqli_fetch_assoc($this->data->query("SELECT `warranty_period`, `reminder_period` FROM `tb_serial_numbers` WHERE `idSerial` = '{$post['idSerial']}' LIMIT 1"));
+
       // Calculate warranty date
-      $serialData = mysqli_fetch_assoc($this->data->query("SELECT `warranty_period` FROM `tb_serial_numbers` WHERE `idSerial` = '{$post['idSerial']}' LIMIT 1"));
+      $limited_warranty = date('Y-m-d', strtotime($date_purchase . ' + ' . $serialDates['warranty_period'] . ' months'));
 
-      // the result of $serialData['warranty_period'] is in number of months
-      $limited_warranty = date('Y-m-d', strtotime($date_purchase . ' + ' . $serialData['warranty_period'] . ' months'));
-
-      // update tb_timelines
       $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `created`) VALUES ('$idAdded', 'info', 'Warranty activated', '$limited_warranty', NOW())");
+
+      // Calculate reminder date
+      $reminder_date = date('Y-m-d', strtotime($limited_warranty . ' - ' . $serialDates['reminder_period'] . ' days'));
+
+      $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `created`) VALUES ('$idAdded', 'reminder', 'Part Replacement Reminder', '$limited_warranty', NOW())");
+
+      // Create/update person to Customer.io
+      $this->cuPersonCustomerIo($post['id_customer'], $post['email']);
 
       $resp = array(
         'status' => 'success',
@@ -175,22 +207,16 @@ class Drew
     exit(0);
   }
 
-  public function rawResponse($post)
-  {
-    $this->data->query("INSERT INTO tb_raw_responses(`content`) VALUES('{$post}')");
-  }
-
   public function orderFulfilled($post)
   {
 
-    // GET ORDER DETAILS VIA SHOPIFY GRAPHQL
+    // Get order details via Shopify GraphQL
     $graphQLUrl = 'https://binsar-playground.myshopify.com/admin/api/2024-01/graphql.json';
     $headers = array(
       'X-Shopify-Access-Token: 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',
       'Content-Type: application/json'
     );
     $order_id = $post['admin_graphql_api_id'];
-    // $order_id = 'gid://shopify/Order/5797041373429';
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $graphQLUrl);
     curl_setopt($ch, CURLOPT_POST, 1);
@@ -218,6 +244,7 @@ class Drew
           $curl = curl_init();
 
           curl_setopt_array($curl, array(
+            CURLOPT_HTTPHEADER => $headers,
             CURLOPT_URL => $graphQLUrl,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
@@ -227,7 +254,6 @@ class Drew
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'POST',
             CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$replacementId.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n    onlineStorePreviewUrl\\n  }\\n}","variables":{}}',
-            CURLOPT_HTTPHEADER => $headers,
           ));
 
           $responseReplacement = curl_exec($curl);
@@ -252,73 +278,8 @@ class Drew
       }
     }
 
-    // CREATE/UPDATE PEOPLE IN CUSTOMER.IO
-    $site_id = 'e16f20bacb7f6388a1d0';
-    $api_key = 'a0e0b045e1194ed5196b';
-
-    $identifier = $customer_id;
-    $email = $resp['data']['order']['email'];
-    $data = array(
-      'id' => $identifier,
-      'email' => $email
-    );
-
-    $json_data = json_encode($data);
-
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "https://track.customer.io/api/v1/customers/{$identifier}");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-      'Authorization: Basic ' . base64_encode("$site_id:$api_key"),
-      'Content-Type: application/json'
-    ));
-
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $json_data);
-    $response = curl_exec($ch);
-    curl_close($ch);
-
-    // INSERT ATTRIBUTES
-    $curl = curl_init();
-
-    $attr = array(
-      "userId" => $customer_id,
-      "traits" => array(
-        "email" => $resp['data']['order']['email'],
-        "name" => $resp['data']['order']['customer']['displayName'],
-        "products" => $product_details
-      )
-    );
-
-    $attr_json = json_encode($attr);
-
-    curl_setopt_array($curl, array(
-      CURLOPT_URL => 'https://cdp.customer.io/v1/identify',
-      CURLOPT_RETURNTRANSFER => true,
-      CURLOPT_ENCODING => '',
-      CURLOPT_MAXREDIRS => 10,
-      CURLOPT_TIMEOUT => 0,
-      CURLOPT_FOLLOWLOCATION => true,
-      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-      CURLOPT_CUSTOMREQUEST => 'POST',
-      CURLOPT_POSTFIELDS => $attr_json,
-      CURLOPT_HTTPHEADER => array(
-        'Content-Type: application/json',
-        'Authorization: Basic ODE4MGMwMzM3ZTlhNzY0Yzg2ODg6'
-      ),
-    ));
-
-    $response = curl_exec($curl);
-
-    if (curl_errno($curl)) {
-      echo 'Curl error: ' . curl_error($curl);
-    }
-
-    echo $attr_json;
-
-    $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-    echo 'HTTP response code: ' . $http_code;
-    curl_close($curl);
+    // Create/update person to Customer.io
+    $this->cuPersonCustomerIo($customer_id, $resp['data']['order']['email']);
   }
 }
 
