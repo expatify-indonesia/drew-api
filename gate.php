@@ -182,7 +182,7 @@ class Drew
       $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `created`) VALUES ('$idAdded', 'info', 'Warranty activated', '$limited_warranty', NOW())");
 
       // Calculate reminder date by weeks
-      $reminder_period = date('Y-m-d', strtotime($date_purchase . ' - ' . $serialDates['reminder_period'] . ' weeks'));
+      $reminder_period = date('Y-m-d', strtotime($date_purchase . ' + ' . $serialDates['reminder_period'] . ' weeks'));
 
       $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('$idAdded', 'reminder', 'Part Replacement Reminder', '$reminder_period', `active`, NOW())");
 
@@ -209,7 +209,6 @@ class Drew
 
   public function orderFulfilled($post)
   {
-
     // Get order details via Shopify GraphQL
     $graphQLUrl = 'https://binsar-playground.myshopify.com/admin/api/2024-01/graphql.json';
     $headers = array(
