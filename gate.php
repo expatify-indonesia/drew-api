@@ -101,6 +101,15 @@ class Drew
     $data = $this->data->query("SELECT * FROM tb_timelines WHERE `idAdded` = '{$post['idAdded']}' ORDER BY `date` DESC");
 
     while ($row = mysqli_fetch_assoc($data)) {
+
+      if ($row['type'] === 'reminder') {
+        $getIdSerial = mysqli_fetch_assoc($this->data->query("SELECT `idSerial` FROM `tb_added_products` WHERE `idAdded` = '{$post['idAdded']}' LIMIT 1"));
+
+        $getReminderPeriod = mysqli_fetch_assoc($this->data->query("SELECT `reminder_period` FROM `tb_serial_numbers` WHERE `idSerial` = '{$getIdSerial['idSerial']}' LIMIT 1"));
+
+        $row['reminder_period'] = $getReminderPeriod['reminder_period'];
+      }
+      
       $resp[] = $row;
     }
 
