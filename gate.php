@@ -182,9 +182,9 @@ class Drew
       $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `created`) VALUES ('$idAdded', 'info', 'Warranty activated', '$limited_warranty', NOW())");
 
       // Calculate reminder date by weeks
-      $limited_warranty = date('Y-m-d', strtotime($limited_warranty . ' - ' . $serialDates['reminder_period'] . ' weeks'));
+      $reminder_period = date('Y-m-d', strtotime($date_purchase . ' - ' . $serialDates['reminder_period'] . ' weeks'));
 
-      $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `created`) VALUES ('$idAdded', 'reminder', 'Part Replacement Reminder', '$limited_warranty', NOW())");
+      $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `created`) VALUES ('$idAdded', 'reminder', 'Part Replacement Reminder', '$reminder_period', NOW())");
 
       // Create/update person to Customer.io
       $this->cuPersonCustomerIo($post['id_customer'], $post['email']);
