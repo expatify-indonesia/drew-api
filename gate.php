@@ -184,7 +184,7 @@ class Drew
       // Calculate reminder date by weeks
       $reminder_period = date('Y-m-d', strtotime($date_purchase . ' - ' . $serialDates['reminder_period'] . ' weeks'));
 
-      $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `created`) VALUES ('$idAdded', 'reminder', 'Part Replacement Reminder', '$reminder_period', NOW())");
+      $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('$idAdded', 'reminder', 'Part Replacement Reminder', '$reminder_period', `active`, NOW())");
 
       // Create/update person to Customer.io
       $this->cuPersonCustomerIo($post['id_customer'], $post['email']);
