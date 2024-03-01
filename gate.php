@@ -176,13 +176,13 @@ class Drew
 
       $serialDates = mysqli_fetch_assoc($this->data->query("SELECT `warranty_period`, `reminder_period` FROM `tb_serial_numbers` WHERE `idSerial` = '{$post['idSerial']}' LIMIT 1"));
 
-      // Calculate warranty date
+      // Calculate warranty date by months
       $limited_warranty = date('Y-m-d', strtotime($date_purchase . ' + ' . $serialDates['warranty_period'] . ' months'));
 
       $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `created`) VALUES ('$idAdded', 'info', 'Warranty activated', '$limited_warranty', NOW())");
 
-      // Calculate reminder date
-      $reminder_date = date('Y-m-d', strtotime($limited_warranty . ' - ' . $serialDates['reminder_period'] . ' days'));
+      // Calculate reminder date by weeks
+      $limited_warranty = date('Y-m-d', strtotime($limited_warranty . ' - ' . $serialDates['reminder_period'] . ' weeks'));
 
       $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `created`) VALUES ('$idAdded', 'reminder', 'Part Replacement Reminder', '$limited_warranty', NOW())");
 
