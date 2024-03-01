@@ -129,7 +129,18 @@ class Drew
     $this->data->query("INSERT INTO tb_added_products(`idAdded`, `idSerial`, `customer_id`, `product_id`, `email`, `agree_marketing`, `purchase_location`, `date_purchase`, `country`, `province`, `city`, `warranty_status`, `created`) VALUES ('$idAdded', '{$post['idSerial']}', '{$post['id_customer']}', '{$post['model_unit']}', '{$post['email']}', {$post['agree_marketing']}, '{$post['purchase_location']}', '$date_purchase', '{$post['country']}', '{$post['province']}', '{$post['city']}', 'active', NOW())");
 
     if ($this->data->affected_rows > 0) {
+      // Update serial number status
       $this->data->query("UPDATE `tb_serial_numbers` SET `status` = 'used' WHERE `serial_number` = '{$post['serial_number']}'");
+
+      // Calculate warranty date
+      $serialData = mysqli_fetch_assoc($this->data->query("SELECT `warranty_period` FROM `tb_serial_numbers` WHERE `idSerial` = '{$post['idSerial']}' LIMIT 1"));
+
+      // the result of $serialData['warranty_period'] is in number of months
+      $limited_warranty = date('Y-m-d', strtotime($date_purchase . ' + ' . $serialData['warranty_period'] . ' months'));
+
+      // update tb_timelines
+      $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `created`) VALUES ('$idAdded', 'info', 'Warranty activated', '$limited_warranty', NOW())");
+
       $resp = array(
         'status' => 'success',
         'title' => 'Product added successfully',
