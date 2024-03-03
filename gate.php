@@ -293,7 +293,7 @@ class Drew
   public function getRawResponse($post){
     $json_post = json_encode($post, true);
 
-    $this->data->query("INSERT INTO tb_raw_response(`content`) VALUES ('$json_post')");
+    $this->data->query("INSERT INTO tb_raw_responses(`content`) VALUES ('$json_post')");
   }
 }
 
