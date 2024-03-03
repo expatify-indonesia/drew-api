@@ -246,7 +246,7 @@ class Drew
         for ($i = 1; $i <= $item['quantity']; $i++) {
           $replacementId = $item['product']['metafields']['edges'][3]['node']['value'];
           $product_id = str_replace('gid://shopify/Product/', '', $item['product']['id']);
-          $idAdded = 'add-' . $product_id . '-' . date('jnygis');
+          $idAdded = 'add-'. date('jnygis').'-'. $product_id .'-'. $i;
 
           $this->data->query("INSERT INTO tb_added_products(`idAdded`, `customer_id`, `product_id`, `email`, `agree_marketing`, `purchase_location`, `date_purchase`, `country`, `province`, `city`, `warranty_status`, `created`) VALUES ('$idAdded', '$customer_id', '$product_id', '{$resp['data']['order']['email']}', 1, 'Drew Website', '$date_purchase', '{$resp['data']['order']['billingAddress']['country']}', '{$resp['data']['order']['billingAddress']['province']}', '{$resp['data']['order']['billingAddress']['city']}', 'not', NOW())");
 
