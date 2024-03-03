@@ -219,9 +219,9 @@ class Drew
   public function orderFulfilled($post)
   {
     // Get order details via Shopify GraphQL
-    $graphQLUrl = 'https://binsar-playground.myshopify.com/admin/api/2024-01/graphql.json';
+    $graphQLUrl = 'https://drewcareid.myshopify.com/admin/api/2024-01/graphql.json';
     $headers = array(
-      'X-Shopify-Access-Token: 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',
+      'X-Shopify-Access-Token: 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',
       'Content-Type: application/json'
     );
     $order_id = $post['admin_graphql_api_id'];
