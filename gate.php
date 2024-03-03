@@ -82,9 +82,13 @@ class Drew
     $post = $this->clean($post);
     $resp = array();
 
-    $data = $this->data->query("SELECT tb_added_products.*, tb_serial_numbers.serial_number FROM tb_added_products, tb_serial_numbers WHERE tb_added_products.customer_id = '{$post['id_customer']}' AND tb_added_products.idSerial = tb_serial_numbers.idSerial");
+    $data = $this->data->query("SELECT * FROM tb_added_products WHERE customer_id = '{$post['id_customer']}'");
 
     while ($row = mysqli_fetch_assoc($data)) {
+      if($row['idSerial'] !== null){
+        $getSerial = mysqli_fetch_assoc($this->data->query("SELECT `serial_number` FROM `tb_serial_numbers` WHERE `idSerial` = '{$row['idSerial']}' LIMIT 1"));
+        $row['serial_number'] = $getSerial['serial_number'];
+      }
       $resp[] = $row;
     }
 
