@@ -224,7 +224,8 @@ class Drew
       'X-Shopify-Access-Token: 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',
       'Content-Type: application/json'
     );
-    $order_id = 'gid://shopify/Order/5797041373429';
+    $order_id = $post['admin_graphql_api_id'];
+    echo $order_id;
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $graphQLUrl);
     curl_setopt($ch, CURLOPT_POST, 1);
@@ -241,9 +242,9 @@ class Drew
     $customer_id = str_replace('gid://shopify/Customer/', '', $resp['data']['order']['customer']['id']);
 
     foreach ($nodes as $item) {
-      if ($item['product']['metafields']['edges'][0]['node']['value'] === "true") {
-        for ($i = 0; $i < $item['quantity']; $i++) {
-          $replacementId = $item['product']['metafields']['edges'][2]['node']['value'];
+      if ($item['product']['metafields']['edges'][1]['node']['value'] === "true") {
+        for ($i = 1; $i <= $item['quantity']; $i++) {
+          $replacementId = $item['product']['metafields']['edges'][3]['node']['value'];
           $product_id = str_replace('gid://shopify/Product/', '', $item['product']['id']);
           $idAdded = 'add-' . $product_id . '-' . date('jnygis');
 
