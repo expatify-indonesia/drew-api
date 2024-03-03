@@ -289,6 +289,12 @@ class Drew
     // Create/update person to Customer.io
     $this->cuPersonCustomerIo($customer_id, $resp['data']['order']['email']);
   }
+
+  public function getRawResponse($post){
+    $json_post = json_encode($post, true);
+
+    $this->data->query("INSERT INTO tb_raw_response(`content`) VALUES ('$json_post')");
+  }
 }
 
 if (!empty($_POST)) {
