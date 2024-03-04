@@ -87,7 +87,7 @@ class Drew
     $post = $this->clean($post);
     $resp = array();
 
-    $data = $this->data->query("SELECT * FROM tb_added_products WHERE customer_id = '{$post['id_customer']}' ORDER BY `idSerial`");
+    $data = $this->data->query("SELECT * FROM tb_added_products WHERE customer_id = '{$post['id_customer']}' ORDER BY `idSerial` ASC");
 
     while ($row = mysqli_fetch_assoc($data)) {
       if($row['idSerial'] !== null){
@@ -229,7 +229,7 @@ class Drew
       $respGP = json_decode($gidProductCurl, true);
 
       // GraphQL replacement product details
-      $gidPart = 'gid://shopify/Product/'.$respGP['data']['product']['metafield']['value'];
+      $gidPart = $respGP['data']['product']['metafield']['value'];
 
       $curl = curl_init();
 
@@ -254,7 +254,7 @@ class Drew
       // Email reminder webhook at Customer.io
       $product_details[] = array(
         "email" => $post['email'],
-        "name" => $resp['data']['order']['customer']['displayName'],
+        "name" => $post['displayName'],
         "product" => array(
           "id" => $post['id_customer'],
           "image" => $respGP['data']['product']['featuredImage']['url'],
