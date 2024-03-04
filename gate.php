@@ -224,9 +224,9 @@ class Drew
           CURLOPT_HTTPHEADER => $this->headers
       ));
 
-      $responseGidProduct = curl_exec($curl);
+      $gidProductCurl = curl_exec($curl);
       curl_close($curl);
-      $respGP = json_decode($responseGidProduct, true);
+      $respGP = json_decode($gidProductCurl, true);
 
       // GraphQL replacement product details
       $gidPart = 'gid://shopify/Product/'.$respGP['data']['product']['metafield']['value'];
@@ -246,9 +246,9 @@ class Drew
           CURLOPT_HTTPHEADER => $this->headers
       ));
 
-      $gidPart = curl_exec($curl);
+      $gidPartCurl = curl_exec($curl);
       curl_close($curl);
-      $respPart = json_decode($gidPart, true);
+      $respPart = json_decode($gidPartCurl, true);
 
 
       // Email reminder webhook at Customer.io
@@ -271,6 +271,8 @@ class Drew
         "purchase_location" => "Website"
       );
 
+      $json_product_details = json_encode($product_details);
+
       $curl = curl_init();
       curl_setopt_array($curl, array(
           CURLOPT_URL => 'https://api.customer.io/v1/webhook/80924986557a4646',
@@ -281,9 +283,12 @@ class Drew
           CURLOPT_FOLLOWLOCATION => true,
           CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
           CURLOPT_CUSTOMREQUEST => 'POST',
-          CURLOPT_POSTFIELDS => json_encode($product_details),
-        CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
+          CURLOPT_POSTFIELDS => $json_product_details,
+          CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
       ));
+
+      $campaignWebhook = curl_exec($curl);
+      curl_close($curl);
 
       $resp = array(
         'status' => 'success',
