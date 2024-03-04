@@ -6,13 +6,14 @@ header("Access-Control-Max-Age: 86400");
 class Drew
 {
   private $data;
+  private $campaign_webhook = 'https://api.customer.io/v1/webhook/80924986557a4646';
   private $graphQLUrl = 'https://drewcareid.myshopify.com/admin/api/2024-01/graphql.json';
   private $headers = array(
       'X-Shopify-Access-Token: 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',
       'Content-Type: application/json'
     );
 
-  public function __construct()
+  private function __construct()
   {
     $lines = file(dirname(__FILE__) . '/.env');
     foreach ($lines as $line) {
@@ -23,7 +24,7 @@ class Drew
     $this->data = new mysqli(getenv('DB_SERVER'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME'));
   }
 
-  public function clean($post)
+  private function clean($post)
   {
     return array_map(function ($p) {
       return (is_array($p)) ? array_map(function ($a) {
@@ -119,7 +120,6 @@ class Drew
         $gidPart = $respGP['data']['product']['metafield']['value'];
 
         $curl = curl_init();
-
         curl_setopt_array($curl, array(
           CURLOPT_URL => $this->graphQLUrl,
           CURLOPT_RETURNTRANSFER => true,
@@ -146,7 +146,7 @@ class Drew
     exit(0);
   }
 
-  public function getTimeline($post)
+  public function getTimelines($post)
   {
     $post = $this->clean($post);
     $resp = array();
@@ -171,7 +171,117 @@ class Drew
     exit(0);
   }
 
-  public function check_serial_number($post)
+  public function partReplaced($post)
+  {
+    $post = $this->clean($post);
+
+    $this->data->query("UPDATE `tb_timelines` SET `date_replace` = '{$post['replaced']}', `reminder_status` = 'not' WHERE `idTimeline` = '{$post['idTimeline']}'");
+
+    // get reminder_period from serial number table
+    $serialDates = mysqli_fetch_assoc($this->data->query("SELECT `reminder_period` FROM `tb_serial_numbers` WHERE `idSerial` = '{$post['idSerial']}' LIMIT 1"));
+
+    // Calculate reminder date by weeks
+    $reminder_period = date('Y-m-d', strtotime($post['replaced'] . ' + ' . $serialDates['reminder_period'] . ' weeks'));
+
+    $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('{$post['idAdded']}', 'reminder', 'Part Replacement Reminder', '$reminder_period', 'active', NOW())");
+
+    // GraphQL product details
+    $gidProduct = 'gid://shopify/Product/' . $post['idProduct'];
+
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+      CURLOPT_URL => $this->graphQLUrl,
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_ENCODING => '',
+      CURLOPT_MAXREDIRS => 10,
+      CURLOPT_TIMEOUT => 0,
+      CURLOPT_FOLLOWLOCATION => true,
+      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+      CURLOPT_CUSTOMREQUEST => 'POST',
+      CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidProduct.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n\\t\\tmetafield(namespace: \\"custom\\" key: \\"part_replacement\\") {\\n\\t\\t\\tvalue\\n\\t\\t}\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
+      CURLOPT_HTTPHEADER => $this->headers
+    ));
+
+    $gidProductCurl = curl_exec($curl);
+    curl_close($curl);
+    $respGP = json_decode($gidProductCurl, true);
+
+    // GraphQL replacement product details
+    $gidPart = $respGP['data']['product']['metafield']['value'];
+
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+      CURLOPT_URL => $this->graphQLUrl,
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_ENCODING => '',
+      CURLOPT_MAXREDIRS => 10,
+      CURLOPT_TIMEOUT => 0,
+      CURLOPT_FOLLOWLOCATION => true,
+      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+      CURLOPT_CUSTOMREQUEST => 'POST',
+      CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidPart.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
+      CURLOPT_HTTPHEADER => $this->headers
+    ));
+
+    $gidPartCurl = curl_exec($curl);
+    curl_close($curl);
+    $respPart = json_decode($gidPartCurl, true);
+    $reminder_date_timestamp = strtotime($reminder_period);
+
+    // Email reminder webhook at Customer.io
+    $product_details = array(
+      "email" => $post['email'],
+      "name" => $post['firstName'],
+      "customer_id" => $post['idCustomer'],
+      "product" => array(
+        "id" => $post['idProduct'],
+        "image" => $respGP['data']['product']['featuredImage']['url'],
+        "title" => $respGP['data']['product']['title'],
+        "date" => $reminder_period,
+        "reminder_date" => $reminder_date_timestamp,
+        "replacement" => array(
+          "title" => $respPart['data']['product']['title'],
+          "image" => $respPart['data']['product']['featuredImage']['url'],
+          "url" => $respPart['data']['product']['onlineStoreUrl']
+        ),
+      )
+    );
+
+    $json_product_details = json_encode($product_details);
+
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+        CURLOPT_URL => $this->campaign_webhook,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS => $json_product_details,
+        CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
+    ));
+
+    $campaignWebhook = curl_exec($curl);
+    curl_close($curl);
+
+    if ($this->data->affected_rows > 0) {
+      $resp = array(
+        'status' => 'success',
+        'title' => 'Part replaced successfully',
+        'message' => 'Your part has been replaced.'
+      );
+    } else {
+      $resp = array(
+        "status" => "failed",
+        "title" => "Part replacement failed",
+        "message" => "Sorry, there is error while replacing your part, please try again."
+      );
+    }
+  }
+
+  public function checkSerialNumber($post)
   {
     $post = $this->clean($post);
     $resp = array();
@@ -253,19 +363,19 @@ class Drew
 
       // GraphQL product details
       $gidProduct = 'gid://shopify/Product/' . $post['model_unit'];
-      $curl = curl_init();
 
+      $curl = curl_init();
       curl_setopt_array($curl, array(
-          CURLOPT_URL => $this->graphQLUrl,
-          CURLOPT_RETURNTRANSFER => true,
-          CURLOPT_ENCODING => '',
-          CURLOPT_MAXREDIRS => 10,
-          CURLOPT_TIMEOUT => 0,
-          CURLOPT_FOLLOWLOCATION => true,
-          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-          CURLOPT_CUSTOMREQUEST => 'POST',
-          CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidProduct.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n\\t\\tmetafield(namespace: \\"custom\\" key: \\"part_replacement\\") {\\n\\t\\t\\tvalue\\n\\t\\t}\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
-          CURLOPT_HTTPHEADER => $this->headers
+        CURLOPT_URL => $this->graphQLUrl,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidProduct.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n\\t\\tmetafield(namespace: \\"custom\\" key: \\"part_replacement\\") {\\n\\t\\t\\tvalue\\n\\t\\t}\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
+        CURLOPT_HTTPHEADER => $this->headers
       ));
 
       $gidProductCurl = curl_exec($curl);
@@ -276,24 +386,22 @@ class Drew
       $gidPart = $respGP['data']['product']['metafield']['value'];
 
       $curl = curl_init();
-
       curl_setopt_array($curl, array(
-          CURLOPT_URL => $this->graphQLUrl,
-          CURLOPT_RETURNTRANSFER => true,
-          CURLOPT_ENCODING => '',
-          CURLOPT_MAXREDIRS => 10,
-          CURLOPT_TIMEOUT => 0,
-          CURLOPT_FOLLOWLOCATION => true,
-          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-          CURLOPT_CUSTOMREQUEST => 'POST',
-          CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidPart.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
-          CURLOPT_HTTPHEADER => $this->headers
+        CURLOPT_URL => $this->graphQLUrl,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidPart.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
+        CURLOPT_HTTPHEADER => $this->headers
       ));
 
       $gidPartCurl = curl_exec($curl);
       curl_close($curl);
       $respPart = json_decode($gidPartCurl, true);
-
       $reminder_date_timestamp = strtotime($reminder_period);
 
       // Email reminder webhook at Customer.io
@@ -319,7 +427,7 @@ class Drew
 
       $curl = curl_init();
       curl_setopt_array($curl, array(
-          CURLOPT_URL => 'https://api.customer.io/v1/webhook/80924986557a4646',
+          CURLOPT_URL => $this->campaign_webhook,
           CURLOPT_RETURNTRANSFER => true,
           CURLOPT_ENCODING => '',
           CURLOPT_MAXREDIRS => 10,
@@ -356,7 +464,7 @@ class Drew
   {
     // Get order details via Shopify GraphQ;
     $order_id = $post['admin_graphql_api_id'];
-    echo $order_id;
+
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $this->graphQLUrl);
     curl_setopt($ch, CURLOPT_POST, 1);
