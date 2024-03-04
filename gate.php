@@ -255,11 +255,12 @@ class Drew
       $product_details = array(
         "email" => $post['email'],
         "name" => $post['first_name'],
+        "customer_id" => $post['id_customer'],
         "product" => array(
-          "id" => $post['id_customer'],
+          "id" => $post['model_unit'],
           "image" => $respGP['data']['product']['featuredImage']['url'],
-          "product_title" => $respGP['data']['product']['title'],
-          "purchase_date" => $date_purchase,
+          "title" => $respGP['data']['product']['title'],
+          "date" => $date_purchase,
           "reminder_date" => $reminder_period,
           "replacement" => array(
             "title" => $respPart['data']['product']['title'],
