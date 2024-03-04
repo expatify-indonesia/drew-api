@@ -151,7 +151,7 @@ class Drew
     $post = $this->clean($post);
     $resp = array();
 
-    $data = $this->data->query("SELECT * FROM tb_timelines WHERE `idAdded` = '{$post['idAdded']}' ORDER BY `date` DESC");
+    $data = $this->data->query("SELECT * FROM tb_timelines WHERE `idAdded` = '{$post['idAdded']}' ORDER BY `type` ASC, `date` DESC");
 
     while ($row = mysqli_fetch_assoc($data)) {
 
@@ -279,6 +279,10 @@ class Drew
         "message" => "Sorry, there is error while replacing your part, please try again."
       );
     }
+
+    header("Content-Type: application/json; charset=UTF-8");
+    echo json_encode($resp);
+    exit(0);
   }
 
   public function checkSerialNumber($post)
