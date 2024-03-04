@@ -82,7 +82,7 @@ class Drew
     $post = $this->clean($post);
     $resp = array();
 
-    $data = $this->data->query("SELECT * FROM tb_added_products WHERE customer_id = '{$post['id_customer']}'");
+    $data = $this->data->query("SELECT * FROM tb_added_products WHERE customer_id = '{$post['id_customer']}' ORDER BY `idSerial` DESC");
 
     while ($row = mysqli_fetch_assoc($data)) {
       if($row['idSerial'] !== null){
@@ -202,6 +202,42 @@ class Drew
       // Create/update person to Customer.io
       $this->cuPersonCustomerIo($post['id_customer'], $post['email']);
 
+      // Email reminder webhook at Customer.io
+      $product_details[] = array(
+        "email" => $post['email'],
+        "name" => $resp['data']['order']['customer']['displayName'],
+        "product" => array(
+          "id" => $post['id_customer'],
+          "image" => $item['product']['featuredImage']['url'],
+          "product_title" => $item['product']['title'],
+          "purchase_date" => $date_purchase,
+          "replacement" => array(
+            "title" => $respRepl['data']['product']['title'],
+            "image" => $respRepl['data']['product']['featuredImage']['url'],
+            "url" => $respRepl['data']['product']['onlineStorePreviewUrl']
+          ),
+        ),
+        "city" => $resp['data']['order']['billingAddress']['city'],
+        "purchase_date" => $date_purchase,
+        "purchase_location" => "Website"
+      );
+
+      $json_product_details = json_encode($product_details);
+
+      $curl = curl_init();
+      curl_setopt_array($curl, array(
+          CURLOPT_URL => 'https://api.customer.io/v1/webhook/80924986557a4646',
+          CURLOPT_RETURNTRANSFER => true,
+          CURLOPT_ENCODING => '',
+          CURLOPT_MAXREDIRS => 10,
+          CURLOPT_TIMEOUT => 0,
+          CURLOPT_FOLLOWLOCATION => true,
+          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+          CURLOPT_CUSTOMREQUEST => 'POST',
+          CURLOPT_POSTFIELDS => $json_product_details,
+        CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
+      ));
+
       $resp = array(
         'status' => 'success',
         'title' => 'Product added successfully',
@@ -275,13 +311,18 @@ class Drew
           $respRepl = json_decode($responseReplacement, true);
 
           $product_details[] = array(
-            "id" => $product_id,
-            "product_title" => $item['product']['title'],
-            "image" => $item['product']['featuredImage']['url'],
-            "replacement" => array(
-              "title" => $respRepl['data']['product']['title'],
-              "image" => $respRepl['data']['product']['featuredImage']['url'],
-              "url" => $respRepl['data']['product']['onlineStorePreviewUrl']
+            "email" => $resp['data']['order']['email'],
+            "name" => $resp['data']['order']['customer']['displayName'],
+            "product" => array(
+              "id" => $product_id,
+              "image" => $item['product']['featuredImage']['url'],
+              "product_title" => $item['product']['title'],
+              "purchase_date" => $date_purchase,
+              "replacement" => array(
+                "title" => $respRepl['data']['product']['title'],
+                "image" => $respRepl['data']['product']['featuredImage']['url'],
+                "url" => $respRepl['data']['product']['onlineStorePreviewUrl']
+              ),
             ),
             "city" => $resp['data']['order']['billingAddress']['city'],
             "purchase_date" => $date_purchase,
