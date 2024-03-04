@@ -254,7 +254,7 @@ class Drew
       // Email reminder webhook at Customer.io
       $product_details[] = array(
         "email" => $post['email'],
-        "name" => $post['displayName'],
+        "name" => $post['first_name'],
         "product" => array(
           "id" => $post['id_customer'],
           "image" => $respGP['data']['product']['featuredImage']['url'],
