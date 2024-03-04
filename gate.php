@@ -260,6 +260,7 @@ class Drew
           "image" => $respGP['data']['product']['featuredImage']['url'],
           "product_title" => $respGP['data']['product']['title'],
           "purchase_date" => $date_purchase,
+          "reminder_date" => $reminder_period,
           "replacement" => array(
             "title" => $respPart['data']['product']['title'],
             "image" => $respPart['data']['product']['featuredImage']['url'],
