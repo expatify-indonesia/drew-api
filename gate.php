@@ -181,7 +181,7 @@ class Drew
     $serialDates = mysqli_fetch_assoc($this->data->query("SELECT `reminder_period` FROM `tb_serial_numbers` WHERE `serial_number` = '{$post['serial_number']}' LIMIT 1"));
 
     // Calculate reminder date by weeks
-    $reminder_period = date('Y-m-d', strtotime($post['replaced'] . ' + ' . $serialDates['reminder_period'] . ' weeks'));
+    $reminder_period = date('Y-m-d', strtotime($post['dateline'] . ' + ' . $serialDates['reminder_period'] . ' weeks'));
 
     $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('{$post['idAdded']}', 'reminder', 'Part Replacement Reminder', '$reminder_period', 'active', NOW())");
 
