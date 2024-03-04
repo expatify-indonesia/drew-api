@@ -13,7 +13,7 @@ class Drew
       'Content-Type: application/json'
     );
 
-  private function __construct()
+  protected function __construct()
   {
     $lines = file(dirname(__FILE__) . '/.env');
     foreach ($lines as $line) {
@@ -24,7 +24,7 @@ class Drew
     $this->data = new mysqli(getenv('DB_SERVER'), getenv('DB_USER'), getenv('DB_PASS'), getenv('DB_NAME'));
   }
 
-  private function clean($post)
+  protected function clean($post)
   {
     return array_map(function ($p) {
       return (is_array($p)) ? array_map(function ($a) {
