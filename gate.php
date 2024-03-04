@@ -5,7 +5,12 @@ header("Access-Control-Max-Age: 86400");
 
 class Drew
 {
-  public $data;
+  private $data;
+  private $graphQLUrl = 'https://drewcareid.myshopify.com/admin/api/2024-01/graphql.json';
+  private $headers = array(
+      'X-Shopify-Access-Token: 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',
+      'Content-Type: application/json'
+    );
 
   public function __construct()
   {
@@ -82,7 +87,7 @@ class Drew
     $post = $this->clean($post);
     $resp = array();
 
-    $data = $this->data->query("SELECT * FROM tb_added_products WHERE customer_id = '{$post['id_customer']}' ORDER BY `idSerial` DESC");
+    $data = $this->data->query("SELECT * FROM tb_added_products WHERE customer_id = '{$post['id_customer']}' ORDER BY `idSerial`");
 
     while ($row = mysqli_fetch_assoc($data)) {
       if($row['idSerial'] !== null){
@@ -202,27 +207,69 @@ class Drew
       // Create/update person to Customer.io
       $this->cuPersonCustomerIo($post['id_customer'], $post['email']);
 
+      // GraphQL product details
+      $gidProduct = 'gid://shopify/Product/' . $post['model_unit'];
+      $curl = curl_init();
+
+      curl_setopt_array($curl, array(
+          CURLOPT_URL => $this->graphQLUrl,
+          CURLOPT_RETURNTRANSFER => true,
+          CURLOPT_ENCODING => '',
+          CURLOPT_MAXREDIRS => 10,
+          CURLOPT_TIMEOUT => 0,
+          CURLOPT_FOLLOWLOCATION => true,
+          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+          CURLOPT_CUSTOMREQUEST => 'POST',
+          CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidProduct.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n\\t\\tmetafield(namespace: \\"custom\\" key: \\"part_replacement\\") {\\n\\t\\t\\tvalue\\n\\t\\t}\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
+          CURLOPT_HTTPHEADER => $this->headers
+      ));
+
+      $responseGidProduct = curl_exec($curl);
+      curl_close($curl);
+      $respGP = json_decode($responseGidProduct, true);
+
+      // GraphQL replacement product details
+      $gidPart = 'gid://shopify/Product/'.$respGP['data']['product']['metafield']['value'];
+
+      $curl = curl_init();
+
+      curl_setopt_array($curl, array(
+          CURLOPT_URL => $this->graphQLUrl,
+          CURLOPT_RETURNTRANSFER => true,
+          CURLOPT_ENCODING => '',
+          CURLOPT_MAXREDIRS => 10,
+          CURLOPT_TIMEOUT => 0,
+          CURLOPT_FOLLOWLOCATION => true,
+          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+          CURLOPT_CUSTOMREQUEST => 'POST',
+          CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidPart.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
+          CURLOPT_HTTPHEADER => $this->headers
+      ));
+
+      $gidPart = curl_exec($curl);
+      curl_close($curl);
+      $respPart = json_decode($gidPart, true);
+
+
       // Email reminder webhook at Customer.io
       $product_details[] = array(
         "email" => $post['email'],
         "name" => $resp['data']['order']['customer']['displayName'],
         "product" => array(
           "id" => $post['id_customer'],
-          "image" => $item['product']['featuredImage']['url'],
-          "product_title" => $item['product']['title'],
+          "image" => $respGP['data']['product']['featuredImage']['url'],
+          "product_title" => $respGP['data']['product']['title'],
           "purchase_date" => $date_purchase,
           "replacement" => array(
-            "title" => $respRepl['data']['product']['title'],
-            "image" => $respRepl['data']['product']['featuredImage']['url'],
-            "url" => $respRepl['data']['product']['onlineStorePreviewUrl']
+            "title" => $respPart['data']['product']['title'],
+            "image" => $respPart['data']['product']['featuredImage']['url'],
+            "url" => $respPart['data']['product']['onlineStorePreviewUrl']
           ),
         ),
         "city" => $resp['data']['order']['billingAddress']['city'],
         "purchase_date" => $date_purchase,
         "purchase_location" => "Website"
       );
-
-      $json_product_details = json_encode($product_details);
 
       $curl = curl_init();
       curl_setopt_array($curl, array(
@@ -234,7 +281,7 @@ class Drew
           CURLOPT_FOLLOWLOCATION => true,
           CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
           CURLOPT_CUSTOMREQUEST => 'POST',
-          CURLOPT_POSTFIELDS => $json_product_details,
+          CURLOPT_POSTFIELDS => json_encode($product_details),
         CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
       ));
 
@@ -258,19 +305,14 @@ class Drew
 
   public function orderFulfilled($post)
   {
-    // Get order details via Shopify GraphQL
-    $graphQLUrl = 'https://drewcareid.myshopify.com/admin/api/2024-01/graphql.json';
-    $headers = array(
-      'X-Shopify-Access-Token: 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',
-      'Content-Type: application/json'
-    );
+    // Get order details via Shopify GraphQ;
     $order_id = $post['admin_graphql_api_id'];
     echo $order_id;
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $graphQLUrl);
+    curl_setopt($ch, CURLOPT_URL, $this->graphQLUrl);
     curl_setopt($ch, CURLOPT_POST, 1);
     curl_setopt($ch, CURLOPT_POSTFIELDS, '{"query":"query{\\n  order(id: \\"'.$order_id.'\\"){\\n    customer {\\n        id\\n        displayName\\n    }\\n    email\\n    lineItems(first: 250) {\\n        nodes{\\n            quantity\\n            product {\\n                id\\n                title\\n                featuredImage {\\n                    url\\n                }\\n\\n                metafields(first:20 namespace:\\"custom\\" ) {\\n                    edges {\\n                        node {\\n                            key\\n                            value\\n                        }\\n                    }\\n                }\\n            }\\n        }\\n    }\\n    billingAddress {\\n        country\\n        city\\n        province\\n    }\\n  }\\n}","variables":{}}');
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     $response = curl_exec($ch);
     curl_close($ch);
@@ -293,8 +335,8 @@ class Drew
           $curl = curl_init();
 
           curl_setopt_array($curl, array(
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_URL => $graphQLUrl,
+            CURLOPT_HTTPHEADER => $this->headers,
+            CURLOPT_URL => $this->graphQLUrl,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
