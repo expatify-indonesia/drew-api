@@ -250,6 +250,7 @@ class Drew
       curl_close($curl);
       $respPart = json_decode($gidPartCurl, true);
 
+      $reminder_date_timestamp = strtotime($reminder_period);
 
       // Email reminder webhook at Customer.io
       $product_details = array(
@@ -261,7 +262,7 @@ class Drew
           "image" => $respGP['data']['product']['featuredImage']['url'],
           "title" => $respGP['data']['product']['title'],
           "date" => $date_purchase,
-          "reminder_date" => $reminder_period,
+          "reminder_date" => $reminder_date_timestamp,
           "replacement" => array(
             "title" => $respPart['data']['product']['title'],
             "image" => $respPart['data']['product']['featuredImage']['url'],
