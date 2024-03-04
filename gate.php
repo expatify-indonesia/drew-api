@@ -266,10 +266,7 @@ class Drew
             "image" => $respPart['data']['product']['featuredImage']['url'],
             "url" => $respPart['data']['product']['onlineStoreUrl']
           ),
-        ),
-        "city" => $resp['data']['order']['billingAddress']['city'],
-        "purchase_date" => $date_purchase,
-        "purchase_location" => "Website"
+        )
       );
 
       $json_product_details = json_encode($product_details);
