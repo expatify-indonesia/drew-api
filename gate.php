@@ -5,9 +5,9 @@ header("Access-Control-Max-Age: 86400");
 
 class Drew
 {
-  private $data;
-  private $graphQLUrl = 'https://drewcareid.myshopify.com/admin/api/2024-01/graphql.json';
-  private $headers = array(
+  public $data;
+  public $graphQLUrl = 'https://drewcareid.myshopify.com/admin/api/2024-01/graphql.json';
+  public $headers = array(
       'X-Shopify-Access-Token: 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',
       'Content-Type: application/json'
     );
