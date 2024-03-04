@@ -5,9 +5,9 @@ header("Access-Control-Max-Age: 86400");
 
 class Drew
 {
-  public $data;
-  public $graphQLUrl = 'https://drewcareid.myshopify.com/admin/api/2024-01/graphql.json';
-  public $headers = array(
+  private $data;
+  private $graphQLUrl = 'https://drewcareid.myshopify.com/admin/api/2024-01/graphql.json';
+  private $headers = array(
       'X-Shopify-Access-Token: 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',
       'Content-Type: application/json'
     );
@@ -93,6 +93,50 @@ class Drew
       if($row['idSerial'] !== null){
         $getSerial = mysqli_fetch_assoc($this->data->query("SELECT `serial_number` FROM `tb_serial_numbers` WHERE `idSerial` = '{$row['idSerial']}' LIMIT 1"));
         $row['serial_number'] = $getSerial['serial_number'];
+
+        // GraphQL product details
+        $gidProduct = 'gid://shopify/Product/' . $row['product_id'];
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+          CURLOPT_URL => $this->graphQLUrl,
+          CURLOPT_RETURNTRANSFER => true,
+          CURLOPT_ENCODING => '',
+          CURLOPT_MAXREDIRS => 10,
+          CURLOPT_TIMEOUT => 0,
+          CURLOPT_FOLLOWLOCATION => true,
+          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+          CURLOPT_CUSTOMREQUEST => 'POST',
+          CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidProduct.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n\\t\\tmetafield(namespace: \\"custom\\" key: \\"part_replacement\\") {\\n\\t\\t\\tvalue\\n\\t\\t}\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
+          CURLOPT_HTTPHEADER => $this->headers
+        ));
+
+        $gidProductCurl = curl_exec($curl);
+        curl_close($curl);
+        $respGP = json_decode($gidProductCurl, true);
+
+        // GraphQL replacement product details
+        $gidPart = $respGP['data']['product']['metafield']['value'];
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+          CURLOPT_URL => $this->graphQLUrl,
+          CURLOPT_RETURNTRANSFER => true,
+          CURLOPT_ENCODING => '',
+          CURLOPT_MAXREDIRS => 10,
+          CURLOPT_TIMEOUT => 0,
+          CURLOPT_FOLLOWLOCATION => true,
+          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+          CURLOPT_CUSTOMREQUEST => 'POST',
+          CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidPart.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
+          CURLOPT_HTTPHEADER => $this->headers
+        ));
+
+        $gidPartCurl = curl_exec($curl);
+        curl_close($curl);
+        $respPart = json_decode($gidPartCurl, true);
+        $row['partUrl'] = $respPart['data']['product']['onlineStoreUrl'];
       }
       $resp[] = $row;
     }
@@ -204,7 +248,7 @@ class Drew
 
       $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('$idAdded', 'reminder', 'Part Replacement Reminder', '$reminder_period', 'active', NOW())");
 
-      // Create/update person to Customer.io
+      // Create/update person to customer.io
       $this->cuPersonCustomerIo($post['id_customer'], $post['email']);
 
       // GraphQL product details
@@ -322,13 +366,12 @@ class Drew
     $response = curl_exec($ch);
     curl_close($ch);
 
-    $product_details = array();
     $resp = json_decode($response, true);
     $nodes = $resp['data']['order']['lineItems']['nodes'];
     $date_purchase = date('Y-m-d', strtotime('today'));
     $customer_id = str_replace('gid://shopify/Customer/', '', $resp['data']['order']['customer']['id']);
 
-    foreach ($nodes as $item) {
+    foreach ($nodes as $item){
       if ($item['product']['metafields']['edges'][1]['node']['value'] === "true") {
         for ($i = 1; $i <= $item['quantity']; $i++) {
           $replacementId = $item['product']['metafields']['edges'][3]['node']['value'];
@@ -336,45 +379,6 @@ class Drew
           $idAdded = 'add-'. date('jnygis').'-'. $product_id .'-'. $i;
 
           $this->data->query("INSERT INTO tb_added_products(`idAdded`, `customer_id`, `product_id`, `email`, `agree_marketing`, `purchase_location`, `date_purchase`, `country`, `province`, `city`, `warranty_status`, `created`) VALUES ('$idAdded', '$customer_id', '$product_id', '{$resp['data']['order']['email']}', 1, 'Drew Website', '$date_purchase', '{$resp['data']['order']['billingAddress']['country']}', '{$resp['data']['order']['billingAddress']['province']}', '{$resp['data']['order']['billingAddress']['city']}', 'not', NOW())");
-
-          $curl = curl_init();
-
-          curl_setopt_array($curl, array(
-            CURLOPT_HTTPHEADER => $this->headers,
-            CURLOPT_URL => $this->graphQLUrl,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$replacementId.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n    onlineStorePreviewUrl\\n  }\\n}","variables":{}}',
-          ));
-
-          $responseReplacement = curl_exec($curl);
-          curl_close($curl);
-
-          $respRepl = json_decode($responseReplacement, true);
-
-          $product_details[] = array(
-            "email" => $resp['data']['order']['email'],
-            "name" => $resp['data']['order']['customer']['displayName'],
-            "product" => array(
-              "id" => $product_id,
-              "image" => $item['product']['featuredImage']['url'],
-              "product_title" => $item['product']['title'],
-              "purchase_date" => $date_purchase,
-              "replacement" => array(
-                "title" => $respRepl['data']['product']['title'],
-                "image" => $respRepl['data']['product']['featuredImage']['url'],
-                "url" => $respRepl['data']['product']['onlineStorePreviewUrl']
-              ),
-            ),
-            "city" => $resp['data']['order']['billingAddress']['city'],
-            "purchase_date" => $date_purchase,
-            "purchase_location" => "Website"
-          );
         }
       }
     }
