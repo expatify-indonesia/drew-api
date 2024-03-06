@@ -92,13 +92,17 @@ class Drew
 
     while ($row = mysqli_fetch_assoc($data)) {
       if($row['idSerial'] !== null){
-        $getSerial = mysqli_fetch_assoc($this->data->query("SELECT `serial_number`, `warranty_period` FROM `tb_serial_numbers` WHERE `idSerial` = '{$row['idSerial']}' LIMIT 1"));
+        $getSerial = mysqli_fetch_assoc($this->data->query("SELECT `serial_number`, `warranty_period`, `reminder_period` FROM `tb_serial_numbers` WHERE `idSerial` = '{$row['idSerial']}' LIMIT 1"));
         $row['serial_number'] = $getSerial['serial_number'];
 
         // calculate warranty date by months
-        $warranty_period = date('Y-m-d', strtotime($row['date_purchase'] . ' + ' . $getSerial['warranty_period'] . ' months'));
+        $warranty_period = date('d F Y', strtotime($row['date_purchase'] . ' + ' . $getSerial['warranty_period'] . ' months'));
+
+        // calculate reminder date by weeks
+        $reminder_period = date('d F Y', strtotime($row['date_purchase'] . ' + ' . $getSerial['reminder_period'] . ' weeks'));
 
         $row['warranty_period'] = $warranty_period;
+        $row['remider_period'] = $reminder_period;
 
         // GraphQL product details
         $gidProduct = 'gid://shopify/Product/' . $row['product_id'];
