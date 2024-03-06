@@ -637,6 +637,8 @@ class Drew
     $post = $this->clean($post);
     $resp = array();
 
+    $answers = json_encode($post['survey_answers']);
+
     $curl = curl_init();
     curl_setopt_array($curl, array(
       CURLOPT_URL => 'https://drewcareid.myshopify.com/admin/api/2023-07/customers/'.$post['id_customer'].'.json',
@@ -654,7 +656,7 @@ class Drew
             {
               "namespace": "custom",
               "key": "survey_answers",
-              "value": "'.$post['survey_answers'].'",
+              "value": "'.$answers.'",
               "type": "list.single_line_text_field"
             }
           ]
