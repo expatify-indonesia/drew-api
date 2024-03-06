@@ -642,37 +642,37 @@ class Drew
     foreach ($decodedAnswers as $key => $value) {
       $formattedAnswers[] = "$key: $value";
     }
-    echo json_encode($formattedAnswers);
-    // $curl = curl_init();
-    // curl_setopt_array($curl, array(
-    //   CURLOPT_URL => 'https://drewcareid.myshopify.com/admin/api/2023-07/customers/'.$post['id_customer'].'.json',
-    //   CURLOPT_RETURNTRANSFER => true,
-    //   CURLOPT_ENCODING => '',
-    //   CURLOPT_MAXREDIRS => 10,
-    //   CURLOPT_TIMEOUT => 0,
-    //   CURLOPT_FOLLOWLOCATION => true,
-    //   CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-    //   CURLOPT_CUSTOMREQUEST => 'PUT',
-    //   CURLOPT_POSTFIELDS =>'{
-    //   "customer": {
-    //     "id": '.$post['id_customer'].',
-    //     "metafields": [
-    //         {
-    //           "namespace": "custom",
-    //           "key": "survey_answers",
-    //           "value": "'.$answers.'",
-    //           "type": "list.single_line_text_field"
-    //         }
-    //       ]
-    //     }
-    //   }',
-    //   CURLOPT_HTTPHEADER => $this->headers
-    // ));
+    $json_answers = json_encode($formattedAnswers);
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+      CURLOPT_URL => 'https://drewcareid.myshopify.com/admin/api/2023-07/customers/'.$post['id_customer'].'.json',
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_ENCODING => '',
+      CURLOPT_MAXREDIRS => 10,
+      CURLOPT_TIMEOUT => 0,
+      CURLOPT_FOLLOWLOCATION => true,
+      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+      CURLOPT_CUSTOMREQUEST => 'PUT',
+      CURLOPT_POSTFIELDS =>'{
+      "customer": {
+        "id": '.$post['id_customer'].',
+        "metafields": [
+            {
+              "namespace": "custom",
+              "key": "survey_answers",
+              "value": "'.json_answers.'",
+              "type": "list.single_line_text_field"
+            }
+          ]
+        }
+      }',
+      CURLOPT_HTTPHEADER => $this->headers
+    ));
 
-    // $response = curl_exec($curl);
+    $response = curl_exec($curl);
 
-    // curl_close($curl);
-    // echo $response;
+    curl_close($curl);
+    echo $response;
   }
 
   public function getRawResponse($post){
