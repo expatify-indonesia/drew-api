@@ -642,8 +642,7 @@ class Drew
     foreach ($decodedAnswers as $key => $value) {
       $formattedAnswers[] = "\"$key: $value\"";
     }
-
-    echo $formattedAnswers;
+    echo json_encode($formattedAnswers);
     // $curl = curl_init();
     // curl_setopt_array($curl, array(
     //   CURLOPT_URL => 'https://drewcareid.myshopify.com/admin/api/2023-07/customers/'.$post['id_customer'].'.json',
