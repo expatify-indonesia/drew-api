@@ -644,11 +644,13 @@ class Drew
     }
 
     $json_answers = json_encode($formattedAnswers, JSON_UNESCAPED_SLASHES);
-    echo "ID CUSTOMER: ".$post['id_customer']."\n";
-    echo "RAW: ".$post['survey']."\n";
-    echo "DECODED: ".$decodedAnswers."\n";
-    echo "WITHOUT: ".$formattedAnswers."\n";
-    echo "JSON_UNESCAPED_SLASHES: ".$json_answers."\n";
+
+    foreach ($formattedAnswers as &$answer) {
+      $answer = '\\"' . trim($answer, '"') . '\\"';
+    }
+  
+    $formattedAnswers = '[' . implode(', ', $formattedAnswers) . ']';
+    echo $formattedAnswers;
     $curl = curl_init();
     curl_setopt_array($curl, array(
       CURLOPT_URL => 'https://drewcareid.myshopify.com/admin/api/2023-07/customers/'.$post['id_customer'].'.json',
