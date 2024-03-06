@@ -636,12 +636,9 @@ class Drew
   {
     $post = $this->clean($post);
     $resp = array();
-
-    $answers = json_encode($post['survey'], JSON_UNESCAPED_SLASHES);
-    $decodedAnswers = json_decode($answers, true);
     $formattedAnswers = [];
 
-    foreach ($decodedAnswers as $key => $value) {
+    foreach ($post['survey'] as $key => $value) {
       $formattedAnswers[] = "\"$key: $value\"";
     }
 
