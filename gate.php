@@ -634,7 +634,6 @@ class Drew
 
   public function saveSurvey($post)
   {
-    $post = $this->clean($post);
     $resp = array();
     $formattedAnswers = [];
 
