@@ -92,14 +92,17 @@ class Drew
 
     while ($row = mysqli_fetch_assoc($data)) {
       if($row['idSerial'] !== null){
-        $getSerial = mysqli_fetch_assoc($this->data->query("SELECT `serial_number`, `warranty_period`, `reminder_period` FROM `tb_serial_numbers` WHERE `idSerial` = '{$row['idSerial']}' LIMIT 1"));
+        $getSerial = mysqli_fetch_assoc($this->data->query("SELECT `serial_number`, `warranty_period` FROM `tb_serial_numbers` WHERE `idSerial` = '{$row['idSerial']}' ORDER BY `reminder_period` DESC LIMIT 1"));
         $row['serial_number'] = $getSerial['serial_number'];
 
         // calculate warranty date by months
         $warranty_period = date('d F Y', strtotime($row['date_purchase'] . ' + ' . $getSerial['warranty_period'] . ' months'));
 
+        // get date from tb_timelines where idAdded = $row['idAdded'] and type = 'reminder' and reminder_status = 'active'
+        $getReminder = mysqli_fetch_assoc($this->data->query("SELECT `date` FROM `tb_timelines` WHERE `idAdded` = '{$row['idAdded']}' AND `type` = 'reminder' AND `reminder_status` = 'active' ORDER BY `date` DESC LIMIT 1"));
+
         // calculate reminder date by weeks
-        $reminder_period = date('d F Y', strtotime($row['date_purchase'] . ' + ' . $getSerial['reminder_period'] . ' weeks'));
+        $reminder_period = date('d F Y', strtotime($getReminder['date']));
 
         $row['warranty_period'] = $warranty_period;
         $row['remider_period'] = $reminder_period;
