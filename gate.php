@@ -311,6 +311,127 @@ class Drew
     exit(0);
   }
 
+  public function registerWarranty($post)
+  {
+    $post = $this->clean($post);
+    $resp = array();
+
+    // Get idSerial from tb_serial_numbers table use serial_number
+    $serial = mysqli_fetch_assoc($this->data->query("SELECT `idSerial`, `warranty_period`, `reminder_period` FROM tb_serial_numbers WHERE `serial_number` = '{$post['serial_number']}' AND `status` = 'unused' LIMIT 1"));
+
+    // Update idSerial in tb_added_products
+    $this->data->query("UPDATE `tb_added_products` SET `idSerial` = '{$serial['idSerial']}' WHERE `idAdded` = '{$post['idAdded']}'");
+
+    // Update status serial number to 'used'
+    $this->data->query("UPDATE `tb_serial_numbers` SET `status` = 'used' WHERE `serial_number` = '{$post['serial_number']}'");
+
+    $date_register = date('Y-m-d', strtotime('today'));
+
+    // Calculate warranty date by months
+    $limited_warranty = date('Y-m-d', strtotime($date_register . ' + ' . $serial['warranty_period'] . ' months'));
+
+    $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `created`) VALUES ('{$post['idAdded']}', 'info', 'Warranty activated', '$limited_warranty', NOW())");
+
+    // Calculate reminder date by weeks
+    $reminder_period = date('Y-m-d', strtotime($date_register . ' + ' . $serial['reminder_period'] . ' weeks'));
+
+    $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('{$post['idAdded']}', 'reminder', 'Part Replacement Reminder', '$reminder_period', 'active', NOW())");
+
+    // Create/update person to customer.io
+    $this->cuPersonCustomerIo($post['id_customer'], $post['email']);
+
+    // GraphQL product details
+    $gidProduct = 'gid://shopify/Product/' . $post['idProduct'];
+
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+      CURLOPT_URL => $this->graphQLUrl,
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_ENCODING => '',
+      CURLOPT_MAXREDIRS => 10,
+      CURLOPT_TIMEOUT => 0,
+      CURLOPT_FOLLOWLOCATION => true,
+      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+      CURLOPT_CUSTOMREQUEST => 'POST',
+      CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidProduct.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n\\t\\tmetafield(namespace: \\"custom\\" key: \\"part_replacement\\") {\\n\\t\\t\\tvalue\\n\\t\\t}\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
+      CURLOPT_HTTPHEADER => $this->headers
+    ));
+
+    $gidProductCurl = curl_exec($curl);
+    curl_close($curl);
+    $respGP = json_decode($gidProductCurl, true);
+
+    // GraphQL replacement product details
+    $gidPart = $respGP['data']['product']['metafield']['value'];
+
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+      CURLOPT_URL => $this->graphQLUrl,
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_ENCODING => '',
+      CURLOPT_MAXREDIRS => 10,
+      CURLOPT_TIMEOUT => 0,
+      CURLOPT_FOLLOWLOCATION => true,
+      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+      CURLOPT_CUSTOMREQUEST => 'POST',
+      CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidPart.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
+      CURLOPT_HTTPHEADER => $this->headers
+    ));
+
+    $gidPartCurl = curl_exec($curl);
+    curl_close($curl);
+    $respPart = json_decode($gidPartCurl, true);
+    $reminder_date_timestamp = strtotime($reminder_period);
+
+    // Email reminder webhook at Customer.io
+    $product_details = array(
+      "email" => $post['email'],
+      "name" => $post['first_name'],
+      "customer_id" => $post['id_customer'],
+      "product" => array(
+        "id" => $post['idProduct'],
+        "image" => $respGP['data']['product']['featuredImage']['url'],
+        "title" => $respGP['data']['product']['title'],
+        "date" => $date_register,
+        "reminder_date" => $reminder_date_timestamp,
+        "replacement" => array(
+          "title" => $respPart['data']['product']['title'],
+          "image" => $respPart['data']['product']['featuredImage']['url'],
+          "url" => $respPart['data']['product']['onlineStoreUrl']
+        ),
+      )
+    );
+
+    $json_product_details = json_encode($product_details);
+
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+        CURLOPT_URL => $this->campaign_webhook,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS => $json_product_details,
+        CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
+    ));
+
+    $campaignWebhook = curl_exec($curl);
+    curl_close($curl);
+
+    $resp = array(
+      'status' => 'success',
+      'title' => 'Warranty registered successfully',
+      'message' => 'Your product guarantee has been registered.'
+    );
+
+    header("Content-Type: application/json; charset=UTF-8");
+    echo json_encode($resp);
+    exit(0);
+  }
+
   public function cuPersonCustomerIo($identifier, $email)
   {
     $site_id = 'e16f20bacb7f6388a1d0';
