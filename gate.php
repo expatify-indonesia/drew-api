@@ -92,8 +92,13 @@ class Drew
 
     while ($row = mysqli_fetch_assoc($data)) {
       if($row['idSerial'] !== null){
-        $getSerial = mysqli_fetch_assoc($this->data->query("SELECT `serial_number` FROM `tb_serial_numbers` WHERE `idSerial` = '{$row['idSerial']}' LIMIT 1"));
+        $getSerial = mysqli_fetch_assoc($this->data->query("SELECT `serial_number`, `warranty_period` FROM `tb_serial_numbers` WHERE `idSerial` = '{$row['idSerial']}' LIMIT 1"));
         $row['serial_number'] = $getSerial['serial_number'];
+
+        // calculate warranty date by months
+        $warranty_period = date('Y-m-d', strtotime($row['date_purchase'] . ' + ' . $getSerial['warranty_period'] . ' months'));
+
+        $row['warranty_period'] = $warranty_period;
 
         // GraphQL product details
         $gidProduct = 'gid://shopify/Product/' . $row['product_id'];
