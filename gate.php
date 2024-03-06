@@ -638,8 +638,15 @@ class Drew
     $resp = array();
 
     $answers = json_encode($post['survey'], JSON_UNESCAPED_SLASHES);
-    echo $answers;
+    $decodedAnswers = json_decode($answers, true);
+    $formattedAnswers = [];
 
+    foreach ($decodedAnswers as $key => $value) {
+      $formattedAnswers[] = "\"$key: $value\"";
+    }
+
+    $formattedJSON = json_encode($formattedAnswers, JSON_UNESCAPED_SLASHES);
+    echo $formattedJSON;
     // $curl = curl_init();
     // curl_setopt_array($curl, array(
     //   CURLOPT_URL => 'https://drewcareid.myshopify.com/admin/api/2023-07/customers/'.$post['id_customer'].'.json',
