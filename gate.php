@@ -644,6 +644,7 @@ class Drew
     }
 
     $json_answers = json_encode($formattedAnswers, JSON_UNESCAPED_SLASHES);
+    echo $json_answers;
     $curl = curl_init();
     curl_setopt_array($curl, array(
       CURLOPT_URL => 'https://drewcareid.myshopify.com/admin/api/2023-07/customers/'.$post['id_customer'].'.json',
