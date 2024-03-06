@@ -637,7 +637,7 @@ class Drew
     $post = $this->clean($post);
     $resp = array();
 
-    $answers = json_encode($post['survey_answers']);
+    $answers = json_encode($post['survey_answers'], JSON_UNESCAPED_SLASHES);
 
     $curl = curl_init();
     curl_setopt_array($curl, array(
