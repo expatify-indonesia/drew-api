@@ -640,7 +640,7 @@ class Drew
     $formattedAnswers = [];
 
     foreach ($decodedAnswers as $key => $value) {
-      $formattedAnswers[] = "\"$key: $value\"";
+      $formattedAnswers[] = "$key: $value";
     }
     echo json_encode($formattedAnswers);
     // $curl = curl_init();
