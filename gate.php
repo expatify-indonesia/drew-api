@@ -640,7 +640,7 @@ class Drew
     $formattedAnswers = [];
 
     foreach ($decodedAnswers as $key => $value) {
-      $formattedAnswers[] = "[\\\"$key: $value\\\"]";
+      $formattedAnswers[] = "[\"$key: $value\"]";
     }
 
     $json_answers = json_encode($formattedAnswers, JSON_UNESCAPED_SLASHES);
