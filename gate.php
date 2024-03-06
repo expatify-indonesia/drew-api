@@ -668,7 +668,7 @@ class Drew
             {
               "namespace": "custom",
               "key": "survey_answers",
-              "value": "'.$json_answers.'",
+              "value": "'.$formattedAnswers.'",
               "type": "list.single_line_text_field"
             }
           ]
