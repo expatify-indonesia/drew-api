@@ -635,9 +635,11 @@ class Drew
   public function saveSurvey($post)
   {
     $resp = array();
+
+    $decodedAnswers = json_decode($post['survey'], true);
     $formattedAnswers = [];
 
-    foreach ($post['survey'] as $key => $value) {
+    foreach ($decodedAnswers as $key => $value) {
       $formattedAnswers[] = "\"$key: $value\"";
     }
 
