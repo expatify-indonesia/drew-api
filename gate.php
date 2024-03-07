@@ -646,10 +646,9 @@ class Drew
     }
   
     $formattedAnswers = '[' . implode(', ', $formattedAnswers) . ']';
-    echo $formattedAnswers;
     $curl = curl_init();
     curl_setopt_array($curl, array(
-      CURLOPT_URL => 'https://drewcareid.myshopify.com/admin/api/2024-01/customers/'.$post['id_customer'].'/metafields/33299025952946.json',
+      CURLOPT_URL => 'https://drewcareid.myshopify.com/admin/api/2024-01/customers/'.$post['id_customer'].'/metafields.json',
       CURLOPT_RETURNTRANSFER => true,
       CURLOPT_ENCODING => '',
       CURLOPT_MAXREDIRS => 10,
@@ -659,11 +658,12 @@ class Drew
       CURLOPT_CUSTOMREQUEST => 'PUT',
       CURLOPT_POSTFIELDS =>'{
         "metafield": {
-          "id": 33299025952946,
-          "value": "'.$formattedAnswers.'",
-          "type": "list.single_line_text_field"
+            "namespace": "custom",
+            "key": "survey_answers",
+            "value": "'.$formattedAnswers.'",
+            "type": "list.single_line_text_field"
         }
-      }',
+    }',
       CURLOPT_HTTPHEADER => $this->headers
     ));
 
