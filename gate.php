@@ -634,16 +634,12 @@ class Drew
 
   public function saveSurvey($post)
   {
-    $resp = array();
-
     $decodedAnswers = json_decode($post['survey'], true);
     $formattedAnswers = [];
 
     foreach ($decodedAnswers as $key => $value) {
       $formattedAnswers[] = "\"$key: $value\"";
     }
-
-    $json_answers = json_encode($formattedAnswers, JSON_UNESCAPED_SLASHES);
 
     foreach ($formattedAnswers as &$answer) {
       $answer = '\\"' . trim($answer, '"') . '\\"';
@@ -653,7 +649,7 @@ class Drew
     echo $formattedAnswers;
     $curl = curl_init();
     curl_setopt_array($curl, array(
-      CURLOPT_URL => 'https://drewcareid.myshopify.com/admin/api/2023-07/customers/'.$post['id_customer'].'.json',
+      CURLOPT_URL => 'https://drewcareid.myshopify.com/admin/api/2024-01/customers/'.$post['id_customer'].'/metafields/33299025952946.json',
       CURLOPT_RETURNTRANSFER => true,
       CURLOPT_ENCODING => '',
       CURLOPT_MAXREDIRS => 10,
@@ -662,23 +658,16 @@ class Drew
       CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
       CURLOPT_CUSTOMREQUEST => 'PUT',
       CURLOPT_POSTFIELDS =>'{
-      "customer": {
-        "id": '.$post['id_customer'].',
-        "metafields": [
-            {
-              "namespace": "custom",
-              "key": "survey_answers",
-              "value": "'.$formattedAnswers.'",
-              "type": "list.single_line_text_field"
-            }
-          ]
+        "metafield": {
+          "id": 33299025952946,
+          "value": "'.$formattedAnswers.'",
+          "type": "list.single_line_text_field"
         }
       }',
       CURLOPT_HTTPHEADER => $this->headers
     ));
 
     $response = curl_exec($curl);
-
     curl_close($curl);
     echo $response;
   }
