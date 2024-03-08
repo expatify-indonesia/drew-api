@@ -98,7 +98,6 @@ class Drew
         // calculate warranty date by months
         $warranty_period = date('d F Y', strtotime($row['date_purchase'] . ' + ' . $getSerial['warranty_period'] . ' months'));
 
-        // get date from tb_timelines where idAdded = $row['idAdded'] and type = 'reminder' and reminder_status = 'active'
         $getReminder = mysqli_fetch_assoc($this->data->query("SELECT `date` FROM `tb_timelines` WHERE `idAdded` = '{$row['idAdded']}' AND `type` = 'reminder' AND `reminder_status` = 'active' ORDER BY `date` DESC LIMIT 1"));
 
         // calculate reminder date by weeks
@@ -106,50 +105,51 @@ class Drew
 
         $row['warranty_period'] = $warranty_period;
         $row['remider_period'] = $reminder_period;
-
-        // GraphQL product details
-        $gidProduct = 'gid://shopify/Product/' . $row['product_id'];
-        $curl = curl_init();
-
-        curl_setopt_array($curl, array(
-          CURLOPT_URL => $this->graphQLUrl,
-          CURLOPT_RETURNTRANSFER => true,
-          CURLOPT_ENCODING => '',
-          CURLOPT_MAXREDIRS => 10,
-          CURLOPT_TIMEOUT => 0,
-          CURLOPT_FOLLOWLOCATION => true,
-          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-          CURLOPT_CUSTOMREQUEST => 'POST',
-          CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidProduct.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n\\t\\tmetafield(namespace: \\"custom\\" key: \\"part_replacement\\") {\\n\\t\\t\\tvalue\\n\\t\\t}\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
-          CURLOPT_HTTPHEADER => $this->headers
-        ));
-
-        $gidProductCurl = curl_exec($curl);
-        curl_close($curl);
-        $respGP = json_decode($gidProductCurl, true);
-
-        // GraphQL replacement product details
-        $gidPart = $respGP['data']['product']['metafield']['value'];
-
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-          CURLOPT_URL => $this->graphQLUrl,
-          CURLOPT_RETURNTRANSFER => true,
-          CURLOPT_ENCODING => '',
-          CURLOPT_MAXREDIRS => 10,
-          CURLOPT_TIMEOUT => 0,
-          CURLOPT_FOLLOWLOCATION => true,
-          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-          CURLOPT_CUSTOMREQUEST => 'POST',
-          CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidPart.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
-          CURLOPT_HTTPHEADER => $this->headers
-        ));
-
-        $gidPartCurl = curl_exec($curl);
-        curl_close($curl);
-        $respPart = json_decode($gidPartCurl, true);
-        $row['partUrl'] = $respPart['data']['product']['onlineStoreUrl'];
       }
+
+      // GraphQL product details
+      $gidProduct = 'gid://shopify/Product/' . $row['product_id'];
+      $curl = curl_init();
+
+      curl_setopt_array($curl, array(
+        CURLOPT_URL => $this->graphQLUrl,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidProduct.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n\\t\\tmetafield(namespace: \\"custom\\" key: \\"part_replacement\\") {\\n\\t\\t\\tvalue\\n\\t\\t}\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
+        CURLOPT_HTTPHEADER => $this->headers
+      ));
+
+      $gidProductCurl = curl_exec($curl);
+      curl_close($curl);
+      $respGP = json_decode($gidProductCurl, true);
+
+      // GraphQL replacement product details
+      $gidPart = $respGP['data']['product']['metafield']['value'];
+
+      $curl = curl_init();
+      curl_setopt_array($curl, array(
+        CURLOPT_URL => $this->graphQLUrl,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS =>'{"query":"query {\\n  product(id: \\"'.$gidPart.'\\"){\\n    id\\n    title\\n    featuredImage {\\n      url\\n    }\\n    onlineStoreUrl\\n  }\\n}","variables":{}}',
+        CURLOPT_HTTPHEADER => $this->headers
+      ));
+
+      $gidPartCurl = curl_exec($curl);
+      curl_close($curl);
+      $respPart = json_decode($gidPartCurl, true);
+      $row['partUrl'] = $respPart['data']['product']['onlineStoreUrl'];
+
       $resp[] = $row;
     }
 
