@@ -669,7 +669,22 @@ class Drew
 
     $response = curl_exec($curl);
     curl_close($curl);
-    echo $response;
+
+    if($response){
+      $resp = array(
+        'status' => 'success',
+        'message' => ''
+      );
+    } else {
+      $resp = array(
+        "status" => 'failed',
+        "message" => ''
+      );
+    }
+
+    header("Content-Type: application/json; charset=UTF-8");
+    echo json_encode($resp);
+    exit(0);
   }
 
   public function getRawResponse($post){
