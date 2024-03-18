@@ -391,7 +391,7 @@ class Drew
         "title" => $respGP['data']['product']['title'],
         "date" => $date_register,
         "reminder_date" => $reminder_date_timestamp,
-        "input_date_link" => $input_date_link,
+        "input_date_link" => urldecode($input_date_link),
         "replacement" => array(
           "title" => $respPart['data']['product']['title'],
           "image" => $respPart['data']['product']['featuredImage']['url'],
@@ -532,7 +532,7 @@ class Drew
           "title" => $respGP['data']['product']['title'],
           "date" => $date_purchase,
           "reminder_date" => $reminder_date_timestamp,
-          "input_date_link" => $input_date_link,
+          "input_date_link" => urldecode($input_date_link),
           "replacement" => array(
             "title" => $respPart['data']['product']['title'],
             "image" => $respPart['data']['product']['featuredImage']['url'],
