@@ -401,7 +401,6 @@ class Drew
     );
 
     $json_product_details = json_encode($product_details);
-    echo $json_product_details;
 
     $curl = curl_init();
     curl_setopt_array($curl, array(
@@ -543,7 +542,6 @@ class Drew
       );
 
       $json_product_details = json_encode($product_details);
-      echo $json_product_details;
 
       $curl = curl_init();
       curl_setopt_array($curl, array(
