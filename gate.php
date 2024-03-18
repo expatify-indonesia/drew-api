@@ -274,7 +274,8 @@ class Drew
       $resp = array(
         'status' => 'success',
         'title' => 'Part replaced successfully',
-        'message' => 'Your part has been replaced.'
+        'message' => 'Your part has been replaced.',
+        'data' => $json_product_details
       );
     } else {
       $resp = array(
