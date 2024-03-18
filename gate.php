@@ -338,7 +338,7 @@ class Drew
 
     $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('{$post['idAdded']}', 'reminder', 'Part Replacement Reminder', '$reminder_period', 'active', NOW())");
 
-    $this->cuPersonCustomerIo($post['id_customer'], $post['email']);
+    $this->cuPersonCustomerIo($post['idCustomer'], $post['email']);
   
     $gidProduct = 'gid://shopify/Product/' . $post['idProduct'];
 
@@ -383,8 +383,8 @@ class Drew
 
     $product_details = array(
       "email" => $post['email'],
-      "name" => $post['first_name'],
-      "customer_id" => $post['id_customer'],
+      "name" => $post['firstName'],
+      "customer_id" => $post['idCustomer'],
       "product" => array(
         "id" => $post['idProduct'],
         "image" => $respGP['data']['product']['featuredImage']['url'],
