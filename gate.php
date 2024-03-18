@@ -325,7 +325,7 @@ class Drew
 
     $email_input_token = hash('crc32', $post['idAdded'] . $post['email'] . $post['serial_number']);
 
-    $this->data->query("UPDATE `tb_added_products` SET `idSerial` = '{$serial['idSerial']}', `email_input_status` = 1, `email_input_token` = '$email_input_token' WHERE `idAdded` = '{$post['idAdded']}'");
+    $this->data->query("UPDATE `tb_added_products` SET `email_input_status` = 1, `email_input_token` = '$email_input_token' WHERE `idAdded` = '{$post['idAdded']}'");
 
     $this->data->query("UPDATE `tb_serial_numbers` SET `status` = 'used' WHERE `serial_number` = '{$post['serial_number']}'");
 
