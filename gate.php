@@ -242,7 +242,7 @@ class Drew
         "title" => $respGP['data']['product']['title'],
         "date" => $reminder_period,
         "reminder_date" => $reminder_date_timestamp,
-        "input_date_link" => urlencode($input_date_link),
+        "input_date_link" => urldecode($input_date_link),
         "replacement" => array(
           "title" => $respPart['data']['product']['title'],
           "image" => $respPart['data']['product']['featuredImage']['url'],
