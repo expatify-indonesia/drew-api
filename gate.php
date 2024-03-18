@@ -423,7 +423,8 @@ class Drew
     $resp = array(
       'status' => 'success',
       'title' => 'Warranty registered successfully',
-      'message' => 'Your product guarantee has been registered.'
+      'message' => 'Your product guarantee has been registered.',
+      'data' => $json_product_details
     );
 
     header("Content-Type: application/json; charset=UTF-8");
@@ -564,7 +565,8 @@ class Drew
       $resp = array(
         'status' => 'success',
         'title' => 'Product added successfully',
-        'message' => 'Your product guarantee has been registered.'
+        'message' => 'Your product guarantee has been registered.',
+        'data' => $json_product_details
       );
     } else {
       $resp = array(
