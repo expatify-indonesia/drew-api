@@ -379,7 +379,7 @@ class Drew
     curl_close($curl);
     $respPart = json_decode($gidPartCurl, true);
     $reminder_date_timestamp = strtotime($reminder_period);
-    $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&idAdded=".$post['idAdded']."&serial_number=".$post['serial_number']."&idProduct=".$post['idProduct']."&customer_id=".$post['id_customer'];
+    $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&idAdded=".$post['idAdded']."&serial_number=".$post['serial_number']."&idProduct=".$post['idProduct']."&customer_id=".$post['idCustomer'];
 
     $product_details = array(
       "email" => $post['email'],
