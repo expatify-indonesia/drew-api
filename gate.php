@@ -230,7 +230,7 @@ class Drew
     curl_close($curl);
     $respPart = json_decode($gidPartCurl, true);
     $reminder_date_timestamp = strtotime($reminder_period);
-    $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$post['idAdded']."&serial_number=".$post['serial_number']."&idProduct=".$post['idProduct']."&customer_id=".$post['idCustomer'];
+    $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&idAdded=".$post['idAdded']."&serial_number=".$post['serial_number']."&idProduct=".$post['idProduct']."&customer_id=".$post['idCustomer'];
 
     $product_details = array(
       "email" => $post['email'],
@@ -252,42 +252,41 @@ class Drew
     );
 
     $json_product_details = json_encode($product_details);
-    echo $json_product_details;
 
-    // $curl = curl_init();
-    // curl_setopt_array($curl, array(
-    //   CURLOPT_URL => $this->campaign_webhook,
-    //   CURLOPT_RETURNTRANSFER => true,
-    //   CURLOPT_ENCODING => '',
-    //   CURLOPT_MAXREDIRS => 10,
-    //   CURLOPT_TIMEOUT => 0,
-    //   CURLOPT_FOLLOWLOCATION => true,
-    //   CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-    //   CURLOPT_CUSTOMREQUEST => 'POST',
-    //   CURLOPT_POSTFIELDS => $json_product_details,
-    //   CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
-    // ));
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+      CURLOPT_URL => $this->campaign_webhook,
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_ENCODING => '',
+      CURLOPT_MAXREDIRS => 10,
+      CURLOPT_TIMEOUT => 0,
+      CURLOPT_FOLLOWLOCATION => true,
+      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+      CURLOPT_CUSTOMREQUEST => 'POST',
+      CURLOPT_POSTFIELDS => $json_product_details,
+      CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
+    ));
 
-    // $campaignWebhook = curl_exec($curl);
-    // curl_close($curl);
+    $campaignWebhook = curl_exec($curl);
+    curl_close($curl);
 
-    // if ($this->data->affected_rows > 0) {
-    //   $resp = array(
-    //     'status' => 'success',
-    //     'title' => 'Part replaced successfully',
-    //     'message' => 'Your part has been replaced.'
-    //   );
-    // } else {
-    //   $resp = array(
-    //     "status" => "failed",
-    //     "title" => "Part replacement failed",
-    //     "message" => "Sorry, there is error while replacing your part, please try again."
-    //   );
-    // }
+    if ($this->data->affected_rows > 0) {
+      $resp = array(
+        'status' => 'success',
+        'title' => 'Part replaced successfully',
+        'message' => 'Your part has been replaced.'
+      );
+    } else {
+      $resp = array(
+        "status" => "failed",
+        "title" => "Part replacement failed",
+        "message" => "Sorry, there is error while replacing your part, please try again."
+      );
+    }
 
-    // header("Content-Type: application/json; charset=UTF-8");
-    // echo json_encode($resp);
-    // exit(0);
+    header("Content-Type: application/json; charset=UTF-8");
+    echo json_encode($resp);
+    exit(0);
   }
 
   public function checkSerialNumber($post)
@@ -379,7 +378,7 @@ class Drew
     curl_close($curl);
     $respPart = json_decode($gidPartCurl, true);
     $reminder_date_timestamp = strtotime($reminder_period);
-    $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$post['idAdded']."&serial_number=".$post['serial_number']."&idProduct=".$post['idProduct']."&customer_id=".$post['id_customer'];
+    $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&idAdded=".$post['idAdded']."&serial_number=".$post['serial_number']."&idProduct=".$post['idProduct']."&customer_id=".$post['id_customer'];
 
     $product_details = array(
       "email" => $post['email'],
@@ -520,7 +519,7 @@ class Drew
       curl_close($curl);
       $respPart = json_decode($gidPartCurl, true);
       $reminder_date_timestamp = strtotime($reminder_period);
-      $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$idAdded."&serial_number=".$post['serial_number']."&idProduct=".$post['model_unit']."&customer_id=".$post['id_customer'];
+      $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&idAdded=".$idAdded."&serial_number=".$post['serial_number']."&idProduct=".$post['model_unit']."&customer_id=".$post['id_customer'];
 
       $product_details = array(
         "email" => $post['email'],
