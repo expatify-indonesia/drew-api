@@ -93,21 +93,18 @@ class Drew
     while ($row = mysqli_fetch_assoc($data)) {
       if($row['idSerial'] !== null){
         $getSerial = mysqli_fetch_assoc($this->data->query("SELECT `serial_number`, `warranty_period` FROM `tb_serial_numbers` WHERE `idSerial` = '{$row['idSerial']}' ORDER BY `reminder_period` DESC LIMIT 1"));
-        $row['serial_number'] = $getSerial['serial_number'];
 
-        // calculate warranty date by months
+        $row['serial_number'] = $getSerial['serial_number'];
         $warranty_period = date('d F Y', strtotime($row['date_purchase'] . ' + ' . $getSerial['warranty_period'] . ' months'));
 
         $getReminder = mysqli_fetch_assoc($this->data->query("SELECT `date` FROM `tb_timelines` WHERE `idAdded` = '{$row['idAdded']}' AND `type` = 'reminder' AND `reminder_status` = 'active' ORDER BY `date` DESC LIMIT 1"));
 
-        // calculate reminder date by weeks
         $reminder_period = date('d F Y', strtotime($getReminder['date']));
 
         $row['warranty_period'] = $warranty_period;
         $row['remider_period'] = $reminder_period;
       }
 
-      // GraphQL product details
       $gidProduct = 'gid://shopify/Product/' . $row['product_id'];
       $curl = curl_init();
 
@@ -127,8 +124,6 @@ class Drew
       $gidProductCurl = curl_exec($curl);
       curl_close($curl);
       $respGP = json_decode($gidProductCurl, true);
-
-      // GraphQL replacement product details
       $gidPart = $respGP['data']['product']['metafield']['value'];
 
       $curl = curl_init();
@@ -166,7 +161,6 @@ class Drew
     $data = $this->data->query("SELECT * FROM tb_timelines WHERE `idAdded` = '{$post['idAdded']}' ORDER BY `type` ASC, `date` DESC");
 
     while ($row = mysqli_fetch_assoc($data)) {
-
       if ($row['type'] === 'reminder') {
         $getIdSerial = mysqli_fetch_assoc($this->data->query("SELECT `idSerial` FROM `tb_added_products` WHERE `idAdded` = '{$post['idAdded']}' LIMIT 1"));
 
@@ -174,7 +168,6 @@ class Drew
 
         $row['reminder_period'] = $getReminderPeriod['reminder_period'];
       }
-      
       $resp[] = $row;
     }
 
@@ -186,18 +179,18 @@ class Drew
   public function partReplaced($post)
   {
     $post = $this->clean($post);
+    $email_input_token = hash('crc32', $post['idAdded'] . $post['email'] . $post['serial_number']);
+
+    $this->data->query("UPDATE `tb_added_products` SET `email_input_status` = 1, `email_input_token` = '$email_input_token' WHERE `idAdded` = '{$post['idAdded']}'");
 
     $this->data->query("UPDATE `tb_timelines` SET `date_replace` = '{$post['replaced']}', `reminder_status` = 'not' WHERE `idTimeline` = '{$post['idTimeline']}'");
 
-    // get reminder_period from serial number table
     $serialDates = mysqli_fetch_assoc($this->data->query("SELECT `reminder_period` FROM `tb_serial_numbers` WHERE `serial_number` = '{$post['serial_number']}' LIMIT 1"));
 
-    // Calculate reminder date by weeks
     $reminder_period = date('Y-m-d', strtotime($post['dateline'] . ' + ' . $serialDates['reminder_period'] . ' weeks'));
 
     $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('{$post['idAdded']}', 'reminder', 'Part Replacement Reminder', '$reminder_period', 'active', NOW())");
 
-    // GraphQL product details
     $gidProduct = 'gid://shopify/Product/' . $post['idProduct'];
 
     $curl = curl_init();
@@ -217,8 +210,6 @@ class Drew
     $gidProductCurl = curl_exec($curl);
     curl_close($curl);
     $respGP = json_decode($gidProductCurl, true);
-
-    // GraphQL replacement product details
     $gidPart = $respGP['data']['product']['metafield']['value'];
 
     $curl = curl_init();
@@ -239,8 +230,8 @@ class Drew
     curl_close($curl);
     $respPart = json_decode($gidPartCurl, true);
     $reminder_date_timestamp = strtotime($reminder_period);
+    $input_date_link = "https://drewcare.id/pages/enter_part_replacement?token=".$email_input_token."&email=".$post['email']."&idAdded=".$post['idAdded']."&serial_number=".$post['serial_number']."&idProduct=".$post['idProduct']."&customer_id=".$post['idCustomer'];
 
-    // Email reminder webhook at Customer.io
     $product_details = array(
       "email" => $post['email'],
       "name" => $post['firstName'],
@@ -251,6 +242,7 @@ class Drew
         "title" => $respGP['data']['product']['title'],
         "date" => $reminder_period,
         "reminder_date" => $reminder_date_timestamp,
+        "input_date_link" => $input_date_link,
         "replacement" => array(
           "title" => $respPart['data']['product']['title'],
           "image" => $respPart['data']['product']['featuredImage']['url'],
@@ -260,19 +252,20 @@ class Drew
     );
 
     $json_product_details = json_encode($product_details);
+    echo $json_product_details;
 
     $curl = curl_init();
     curl_setopt_array($curl, array(
-        CURLOPT_URL => $this->campaign_webhook,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => '',
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 0,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS => $json_product_details,
-        CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
+      CURLOPT_URL => $this->campaign_webhook,
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_ENCODING => '',
+      CURLOPT_MAXREDIRS => 10,
+      CURLOPT_TIMEOUT => 0,
+      CURLOPT_FOLLOWLOCATION => true,
+      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+      CURLOPT_CUSTOMREQUEST => 'POST',
+      CURLOPT_POSTFIELDS => $json_product_details,
+      CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
     ));
 
     $campaignWebhook = curl_exec($curl);
@@ -327,32 +320,26 @@ class Drew
   {
     $post = $this->clean($post);
     $resp = array();
-
-    // Get idSerial from tb_serial_numbers table use serial_number
+  
     $serial = mysqli_fetch_assoc($this->data->query("SELECT `idSerial`, `warranty_period`, `reminder_period` FROM tb_serial_numbers WHERE `serial_number` = '{$post['serial_number']}' AND `status` = 'unused' LIMIT 1"));
 
-    // Update idSerial in tb_added_products
-    $this->data->query("UPDATE `tb_added_products` SET `idSerial` = '{$serial['idSerial']}' WHERE `idAdded` = '{$post['idAdded']}'");
+    $email_input_token = hash('crc32', $post['idAdded'] . $post['email'] . $post['serial_number']);
 
-    // Update status serial number to 'used'
+    $this->data->query("UPDATE `tb_added_products` SET `idSerial` = '{$serial['idSerial']}', `email_input_status` = 1, `email_input_token` = '$email_input_token' WHERE `idAdded` = '{$post['idAdded']}'");
+
     $this->data->query("UPDATE `tb_serial_numbers` SET `status` = 'used' WHERE `serial_number` = '{$post['serial_number']}'");
 
     $date_register = date('Y-m-d', strtotime('today'));
-
-    // Calculate warranty date by months
     $limited_warranty = date('Y-m-d', strtotime($date_register . ' + ' . $serial['warranty_period'] . ' months'));
 
     $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `created`) VALUES ('{$post['idAdded']}', 'info', 'Warranty activated', '$limited_warranty', NOW())");
 
-    // Calculate reminder date by weeks
     $reminder_period = date('Y-m-d', strtotime($date_register . ' + ' . $serial['reminder_period'] . ' weeks'));
 
     $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('{$post['idAdded']}', 'reminder', 'Part Replacement Reminder', '$reminder_period', 'active', NOW())");
 
-    // Create/update person to customer.io
     $this->cuPersonCustomerIo($post['id_customer'], $post['email']);
-
-    // GraphQL product details
+  
     $gidProduct = 'gid://shopify/Product/' . $post['idProduct'];
 
     $curl = curl_init();
@@ -372,8 +359,6 @@ class Drew
     $gidProductCurl = curl_exec($curl);
     curl_close($curl);
     $respGP = json_decode($gidProductCurl, true);
-
-    // GraphQL replacement product details
     $gidPart = $respGP['data']['product']['metafield']['value'];
 
     $curl = curl_init();
@@ -394,8 +379,8 @@ class Drew
     curl_close($curl);
     $respPart = json_decode($gidPartCurl, true);
     $reminder_date_timestamp = strtotime($reminder_period);
+    $input_date_link = "https://drewcare.id/pages/enter_part_replacement?token=".$email_input_token."&email=".$post['email']."&idAdded=".$post['idAdded']."&serial_number=".$post['serial_number']."&idProduct=".$post['idProduct']."&customer_id=".$post['id_customer'];
 
-    // Email reminder webhook at Customer.io
     $product_details = array(
       "email" => $post['email'],
       "name" => $post['first_name'],
@@ -406,6 +391,7 @@ class Drew
         "title" => $respGP['data']['product']['title'],
         "date" => $date_register,
         "reminder_date" => $reminder_date_timestamp,
+        "input_date_link" => $input_date_link,
         "replacement" => array(
           "title" => $respPart['data']['product']['title'],
           "image" => $respPart['data']['product']['featuredImage']['url'],
@@ -415,19 +401,20 @@ class Drew
     );
 
     $json_product_details = json_encode($product_details);
+    echo $json_product_details;
 
     $curl = curl_init();
     curl_setopt_array($curl, array(
-        CURLOPT_URL => $this->campaign_webhook,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => '',
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 0,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS => $json_product_details,
-        CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
+      CURLOPT_URL => $this->campaign_webhook,
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_ENCODING => '',
+      CURLOPT_MAXREDIRS => 10,
+      CURLOPT_TIMEOUT => 0,
+      CURLOPT_FOLLOWLOCATION => true,
+      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+      CURLOPT_CUSTOMREQUEST => 'POST',
+      CURLOPT_POSTFIELDS => $json_product_details,
+      CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
     ));
 
     $campaignWebhook = curl_exec($curl);
@@ -475,30 +462,25 @@ class Drew
     $post = $this->clean($post);
     $idAdded = 'add-' . $post['model_unit'] . '-' . date('jnygis');
     $date_purchase = date('Y-m-d', strtotime($post['purchase_date']));
+    $email_input_token = hash('crc32', $idAdded . $post['email'] . $date_purchase);
     $resp = array();
 
-    $this->data->query("INSERT INTO tb_added_products(`idAdded`, `idSerial`, `customer_id`, `product_id`, `email`, `agree_marketing`, `purchase_location`, `date_purchase`, `country`, `province`, `city`, `warranty_status`, `created`) VALUES ('$idAdded', '{$post['idSerial']}', '{$post['id_customer']}', '{$post['model_unit']}', '{$post['email']}', {$post['agree_marketing']}, '{$post['purchase_location']}', '$date_purchase', '{$post['country']}', '{$post['province']}', '{$post['city']}', 'active', NOW())");
+    $this->data->query("INSERT INTO tb_added_products(`idAdded`, `idSerial`, `customer_id`, `product_id`, `email`, `agree_marketing`, `purchase_location`, `date_purchase`, `country`, `province`, `city`, `warranty_status`, `email_input_status`, `email_input_token`, `created`) VALUES ('$idAdded', '{$post['idSerial']}', '{$post['id_customer']}', '{$post['model_unit']}', '{$post['email']}', {$post['agree_marketing']}, '{$post['purchase_location']}', '$date_purchase', '{$post['country']}', '{$post['province']}', '{$post['city']}', 'active', 1, '$email_input_token', NOW())");
 
     if ($this->data->affected_rows > 0) {
-      // Update serial number status
       $this->data->query("UPDATE `tb_serial_numbers` SET `status` = 'used' WHERE `serial_number` = '{$post['serial_number']}'");
 
       $serialDates = mysqli_fetch_assoc($this->data->query("SELECT `warranty_period`, `reminder_period` FROM `tb_serial_numbers` WHERE `idSerial` = '{$post['idSerial']}' LIMIT 1"));
 
-      // Calculate warranty date by months
       $limited_warranty = date('Y-m-d', strtotime($date_purchase . ' + ' . $serialDates['warranty_period'] . ' months'));
 
       $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `created`) VALUES ('$idAdded', 'info', 'Warranty activated', '$limited_warranty', NOW())");
 
-      // Calculate reminder date by weeks
       $reminder_period = date('Y-m-d', strtotime($date_purchase . ' + ' . $serialDates['reminder_period'] . ' weeks'));
 
       $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('$idAdded', 'reminder', 'Part Replacement Reminder', '$reminder_period', 'active', NOW())");
 
-      // Create/update person to customer.io
       $this->cuPersonCustomerIo($post['id_customer'], $post['email']);
-
-      // GraphQL product details
       $gidProduct = 'gid://shopify/Product/' . $post['model_unit'];
 
       $curl = curl_init();
@@ -518,8 +500,6 @@ class Drew
       $gidProductCurl = curl_exec($curl);
       curl_close($curl);
       $respGP = json_decode($gidProductCurl, true);
-
-      // GraphQL replacement product details
       $gidPart = $respGP['data']['product']['metafield']['value'];
 
       $curl = curl_init();
@@ -540,8 +520,8 @@ class Drew
       curl_close($curl);
       $respPart = json_decode($gidPartCurl, true);
       $reminder_date_timestamp = strtotime($reminder_period);
+      $input_date_link = "https://drewcare.id/pages/enter_part_replacement?token=".$email_input_token."&email=".$post['email']."&idAdded=".$idAdded."&serial_number=".$post['serial_number']."&idProduct=".$post['model_unit']."&customer_id=".$post['id_customer'];
 
-      // Email reminder webhook at Customer.io
       $product_details = array(
         "email" => $post['email'],
         "name" => $post['first_name'],
@@ -552,6 +532,7 @@ class Drew
           "title" => $respGP['data']['product']['title'],
           "date" => $date_purchase,
           "reminder_date" => $reminder_date_timestamp,
+          "input_date_link" => $input_date_link,
           "replacement" => array(
             "title" => $respPart['data']['product']['title'],
             "image" => $respPart['data']['product']['featuredImage']['url'],
@@ -561,19 +542,20 @@ class Drew
       );
 
       $json_product_details = json_encode($product_details);
+      echo $json_product_details;
 
       $curl = curl_init();
       curl_setopt_array($curl, array(
-          CURLOPT_URL => $this->campaign_webhook,
-          CURLOPT_RETURNTRANSFER => true,
-          CURLOPT_ENCODING => '',
-          CURLOPT_MAXREDIRS => 10,
-          CURLOPT_TIMEOUT => 0,
-          CURLOPT_FOLLOWLOCATION => true,
-          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-          CURLOPT_CUSTOMREQUEST => 'POST',
-          CURLOPT_POSTFIELDS => $json_product_details,
-          CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
+        CURLOPT_URL => $this->campaign_webhook,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS => $json_product_details,
+        CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
       ));
 
       $campaignWebhook = curl_exec($curl);
@@ -599,7 +581,6 @@ class Drew
 
   public function orderFulfilled($post)
   {
-    // Get order details via Shopify GraphQ;
     $order_id = $post['admin_graphql_api_id'];
 
     $ch = curl_init();
@@ -658,10 +639,10 @@ class Drew
       CURLOPT_CUSTOMREQUEST => 'POST',
       CURLOPT_POSTFIELDS =>'{
         "metafield": {
-            "namespace": "custom",
-            "key": "survey_answers",
-            "value": "'.$formattedAnswers.'",
-            "type": "list.single_line_text_field"
+          "namespace": "custom",
+          "key": "survey_answers",
+          "value": "'.$formattedAnswers.'",
+          "type": "list.single_line_text_field"
         }
     }',
       CURLOPT_HTTPHEADER => $this->headers
