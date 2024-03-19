@@ -316,6 +316,39 @@ class Drew
     exit(0);
   }
 
+  public function checkToken($post)
+  {
+    $post = $this->clean($post);
+
+    $added = $this->data->query("SELECT `idAdded` FROM tb_added_products WHERE `email_input_token` = '{$post['token']}' AND `idAdded` = '{$post['idAdded']}' AND `email_input_status` = 1 LIMIT 1");
+
+    if ($added->num_rows > 0) {
+      // get idTimeline
+      $timeline = $this->data->query("SELECT * FROM tb_timelines WHERE `idAdded` = '{$post['idAdded']}' AND `type` = 'reminder' AND `reminder_status` = 'active' LIMIT 1");
+
+      if ($timeline->num_rows > 0) {
+        $row = mysqli_fetch_assoc($timeline);
+        $resp = array(
+          'status' => 'success',
+          'message' => 'Token is valid',
+          'idTimeline' => $row['idTimeline'],
+          'dateline' => $row['date'],
+          
+        );
+      } else {
+        $resp = array(
+          'status' => 'failed',
+          'message' => 'Sorry, the token is invalid. Try again!'
+        );
+      }
+    } else {
+      $resp = array(
+        'status' => 'failed',
+        'message' => 'Sorry, the token is invalid. Try again!'
+      );
+    }
+  }
+
   public function registerWarranty($post)
   {
     $post = $this->clean($post);
