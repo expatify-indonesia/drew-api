@@ -51,6 +51,7 @@ class Drew
   {
     $post = $this->clean($post);
     $resp = array();
+
     $getCountryId = mysqli_fetch_assoc($this->data->query("SELECT `id` FROM `tb_countries` WHERE `name` = '{$post['id']}' LIMIT 1"));
 
     $data = $this->data->query("SELECT * FROM `tb_provinces` WHERE `country_id` = '{$getCountryId['id']}' ORDER BY `name`");
@@ -69,6 +70,7 @@ class Drew
   {
     $post = $this->clean($post);
     $resp = array();
+
     $getProvinceId = mysqli_fetch_assoc($this->data->query("SELECT `id` FROM `tb_provinces` WHERE `name` = '{$post['id']}' LIMIT 1"));
 
     $data = $this->data->query("SELECT * FROM `tb_cities` WHERE `province_id` = '{$getProvinceId['id']}' ORDER BY `name`");
@@ -95,14 +97,11 @@ class Drew
         $getSerial = mysqli_fetch_assoc($this->data->query("SELECT `serial_number`, `warranty_period` FROM `tb_serial_numbers` WHERE `idSerial` = '{$row['idSerial']}' ORDER BY `reminder_period` DESC LIMIT 1"));
 
         $row['serial_number'] = $getSerial['serial_number'];
-        $warranty_period = date('d F Y', strtotime($row['date_purchase'] . ' + ' . $getSerial['warranty_period'] . ' months'));
+        $row['warranty_period'] = date('d F Y', strtotime($row['date_purchase'] . ' + ' . $getSerial['warranty_period'] . ' months'));
 
         $getReminder = mysqli_fetch_assoc($this->data->query("SELECT `date` FROM `tb_timelines` WHERE `idAdded` = '{$row['idAdded']}' AND `type` = 'reminder' AND `reminder_status` = 'active' ORDER BY `date` DESC LIMIT 1"));
 
-        $reminder_period = date('d F Y', strtotime($getReminder['date']));
-
-        $row['warranty_period'] = $warranty_period;
-        $row['remider_period'] = $reminder_period;
+        $row['remider_period'] = date('d F Y', strtotime($getReminder['date']));
       }
 
       $gidProduct = 'gid://shopify/Product/' . $row['product_id'];
@@ -323,7 +322,6 @@ class Drew
     $added = $this->data->query("SELECT `idAdded` FROM tb_added_products WHERE `email_input_token` = '{$post['token']}' AND `idAdded` = '{$post['idAdded']}' AND `email_input_status` = 1 LIMIT 1");
 
     if ($added->num_rows > 0) {
-      // get idTimeline
       $timeline = $this->data->query("SELECT * FROM tb_timelines WHERE `idAdded` = '{$post['idAdded']}' AND `type` = 'reminder' AND `reminder_status` = 'active' LIMIT 1");
 
       if ($timeline->num_rows > 0) {
