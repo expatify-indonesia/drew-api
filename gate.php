@@ -345,6 +345,10 @@ class Drew
         'message' => 'Sorry, the token is invalid. Try again!'
       );
     }
+
+    header("Content-Type: application/json; charset=UTF-8");
+    echo json_encode($resp);
+    exit(0);
   }
 
   public function registerWarranty($post)
