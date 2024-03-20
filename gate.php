@@ -6,7 +6,7 @@ header("Access-Control-Max-Age: 86400");
 class Drew
 {
   public $data;
-  public $campaign_webhook = 'https://api.customer.io/v1/webhook/80924986557a4646';
+  public $campaign_webhook = 'https://api.customer.io/v1/webhook/09a5b8dc5829535b';
   public $graphQLUrl = 'https://drewcareid.myshopify.com/admin/api/2024-01/graphql.json';
   public $headers = array(
     'X-Shopify-Access-Token: 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',
