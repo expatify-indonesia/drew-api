@@ -237,6 +237,7 @@ class Drew
     $gidPartCurl = curl_exec($curl);
     curl_close($curl);
     $respPart = json_decode($gidPartCurl, true);
+
     $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$post['idAdded']."&serialNumber=".$post['serial_number']."&idProduct=".$post['idProduct']."&idCustomer=".$post['idCustomer'];
 
     $product_details = array(
@@ -420,7 +421,7 @@ class Drew
     $gidPartCurl = curl_exec($curl);
     curl_close($curl);
     $respPart = json_decode($gidPartCurl, true);
-    $reminder_date_timestamp = strtotime($reminder_period);
+
     $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$post['idAdded']."&serialNumber=".$post['serial_number']."&idProduct=".$post['idProduct']."&idCustomer=".$post['idCustomer'];
 
     $product_details = array(
@@ -432,7 +433,7 @@ class Drew
         "image" => $respGP['data']['product']['featuredImage']['url'],
         "title" => $respGP['data']['product']['title'],
         "date" => $date_register,
-        "reminder_date" => $reminder_date_timestamp,
+        "reminder_date" => strtotime($reminder_period),
         "input_date_link" => urldecode($input_date_link),
         "replacement" => array(
           "title" => $respPart['data']['product']['title'],
@@ -508,7 +509,7 @@ class Drew
 
     $this->data->query("INSERT INTO tb_added_products(`idAdded`, `idSerial`, `customer_id`, `product_id`, `first_name`, `email`, `agree_marketing`, `purchase_location`, `date_purchase`, `country`, `province`, `city`, `warranty_status`, `email_input_status`, `email_input_token`, `created`) VALUES ('$idAdded', '{$post['idSerial']}', '{$post['id_customer']}', '{$post['model_unit']}', '{$post['first_name']}', '{$post['email']}', {$post['agree_marketing']}, '{$post['purchase_location']}', '$date_purchase', '{$post['country']}', '{$post['province']}', '{$post['city']}', 'active', 1, '$email_input_token', NOW())");
 
-    if ($this->data->affected_rows > 0) {
+    if ($this->data->affected_rows > 0){
       $this->data->query("UPDATE `tb_serial_numbers` SET `status` = 'used' WHERE `serial_number` = '{$post['serial_number']}'");
 
       $serialDates = mysqli_fetch_assoc($this->data->query("SELECT `warranty_period`, `reminder_period` FROM `tb_serial_numbers` WHERE `idSerial` = '{$post['idSerial']}' LIMIT 1"));
@@ -560,7 +561,7 @@ class Drew
       $gidPartCurl = curl_exec($curl);
       curl_close($curl);
       $respPart = json_decode($gidPartCurl, true);
-      $reminder_date_timestamp = strtotime($reminder_period);
+
       $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$idAdded."&serialNumber=".$post['serial_number']."&idProduct=".$post['model_unit']."&idCustomer=".$post['id_customer'];
 
       $product_details = array(
@@ -572,7 +573,7 @@ class Drew
           "image" => $respGP['data']['product']['featuredImage']['url'],
           "title" => $respGP['data']['product']['title'],
           "date" => $date_purchase,
-          "reminder_date" => $reminder_date_timestamp,
+          "reminder_date" => strtotime($reminder_period),
           "input_date_link" => urldecode($input_date_link),
           "replacement" => array(
             "title" => $respPart['data']['product']['title'],
@@ -640,7 +641,6 @@ class Drew
     foreach ($nodes as $item){
       if ($item['product']['metafields']['edges'][1]['node']['value'] === "true") {
         for ($i = 1; $i <= $item['quantity']; $i++) {
-          $replacementId = $item['product']['metafields']['edges'][3]['node']['value'];
           $product_id = str_replace('gid://shopify/Product/', '', $item['product']['id']);
           $idAdded = 'add-'. date('jnygis').'-'. $product_id .'-'. $i;
 
@@ -715,7 +715,7 @@ class Drew
   }
 }
 
-if (!empty($_POST)) {
+if (!empty($_POST)){
   $data = $_POST;
 } else {
   $json_data = file_get_contents('php://input');
@@ -725,7 +725,7 @@ if (!empty($_POST)) {
 $action = new Drew;
 $method = filter_input(INPUT_GET, 'method', FILTER_SANITIZE_SPECIAL_CHARS);
 
-if ($method !== 'orderFulfilled') {
+if ($method !== 'orderFulfilled'){
   $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
   if ($origin !== 'https://drewcare.id') {
     header('HTTP/1.1 403 Forbidden');
