@@ -722,12 +722,15 @@ if (!empty($_POST)) {
   $data = json_decode($json_data, true);
 }
 
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if ($origin !== 'https://drewcare.id') {
-  header('HTTP/1.1 403 Forbidden');
-  exit('Access denied');
-}
-
 $action = new Drew;
 $method = filter_input(INPUT_GET, 'method', FILTER_SANITIZE_SPECIAL_CHARS);
+
+if ($method !== 'orderFulfilled') {
+  $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+  if ($origin !== 'https://drewcare.id') {
+    header('HTTP/1.1 403 Forbidden');
+    exit('Access denied');
+  }
+}
+
 call_user_func_array(array($action, $method), array($data));
