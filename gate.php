@@ -178,9 +178,6 @@ class Drew
   public function partReplaced($post)
   {
     $post = $this->clean($post);
-    $email_input_token = hash('crc32', $post['idAdded'] . $post['email'] . $post['serial_number']);
-
-    $this->data->query("UPDATE `tb_added_products` SET `email_input_status` = 1, `email_input_token` = '$email_input_token' WHERE `idAdded` = '{$post['idAdded']}'");
 
     $this->data->query("UPDATE `tb_timelines` SET `date_replace` = '{$post['replaced']}', `reminder_status` = 'not' WHERE `idTimeline` = '{$post['idTimeline']}'");
 
@@ -189,6 +186,18 @@ class Drew
     $reminder_period = date('Y-m-d', strtotime($post['dateline'] . ' + ' . $serialDates['reminder_period'] . ' weeks'));
 
     $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('{$post['idAdded']}', 'reminder', 'Part Replacement Reminder', '$reminder_period', 'active', NOW())");
+
+    // If there is no $post['firstName'].
+    if (empty($post['firstName'])) {
+      $getAdded = mysqli_fetch_assoc($this->data->query("SELECT `first_name`, `email` FROM `tb_added_products` WHERE `idAdded` = '{$post['idAdded']}' LIMIT 1"));
+      $post['email'] = $getAdded['email'];
+      $post['firstName'] = $getAdded['first_name'];
+    }
+
+    // Generate new token for email verification.
+    $email_input_token = hash('crc32', strtotime($reminder_period) . $post['serial_number']);
+
+    $this->data->query("UPDATE `tb_added_products` SET `email_input_status` = 1, `email_input_token` = '$email_input_token' WHERE `idAdded` = '{$post['idAdded']}'");
 
     $gidProduct = 'gid://shopify/Product/' . $post['idProduct'];
 
@@ -228,7 +237,6 @@ class Drew
     $gidPartCurl = curl_exec($curl);
     curl_close($curl);
     $respPart = json_decode($gidPartCurl, true);
-    $reminder_date_timestamp = strtotime($reminder_period);
     $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$post['idAdded']."&serialNumber=".$post['serial_number']."&idProduct=".$post['idProduct']."&idCustomer=".$post['idCustomer'];
 
     $product_details = array(
@@ -240,7 +248,7 @@ class Drew
         "image" => $respGP['data']['product']['featuredImage']['url'],
         "title" => $respGP['data']['product']['title'],
         "date" => $reminder_period,
-        "reminder_date" => $reminder_date_timestamp,
+        "reminder_date" => strtotime($reminder_period),
         "input_date_link" => urldecode($input_date_link),
         "replacement" => array(
           "title" => $respPart['data']['product']['title'],
@@ -273,8 +281,7 @@ class Drew
       $resp = array(
         'status' => 'success',
         'title' => 'Part replaced successfully',
-        'message' => 'Your part has been replaced.',
-        'data' => $json_product_details
+        'message' => 'Your part has been replaced.'
       );
     } else {
       $resp = array(
@@ -500,7 +507,7 @@ class Drew
     $email_input_token = hash('crc32', $idAdded . $post['email'] . $date_purchase);
     $resp = array();
 
-    $this->data->query("INSERT INTO tb_added_products(`idAdded`, `idSerial`, `customer_id`, `product_id`, `email`, `agree_marketing`, `purchase_location`, `date_purchase`, `country`, `province`, `city`, `warranty_status`, `email_input_status`, `email_input_token`, `created`) VALUES ('$idAdded', '{$post['idSerial']}', '{$post['id_customer']}', '{$post['model_unit']}', '{$post['email']}', {$post['agree_marketing']}, '{$post['purchase_location']}', '$date_purchase', '{$post['country']}', '{$post['province']}', '{$post['city']}', 'active', 1, '$email_input_token', NOW())");
+    $this->data->query("INSERT INTO tb_added_products(`idAdded`, `idSerial`, `customer_id`, `product_id`, `first_name`, `email`, `agree_marketing`, `purchase_location`, `date_purchase`, `country`, `province`, `city`, `warranty_status`, `email_input_status`, `email_input_token`, `created`) VALUES ('$idAdded', '{$post['idSerial']}', '{$post['id_customer']}', '{$post['model_unit']}', '{$post['first_name']}', '{$post['email']}', {$post['agree_marketing']}, '{$post['purchase_location']}', '$date_purchase', '{$post['country']}', '{$post['province']}', '{$post['city']}', 'active', 1, '$email_input_token', NOW())");
 
     if ($this->data->affected_rows > 0) {
       $this->data->query("UPDATE `tb_serial_numbers` SET `status` = 'used' WHERE `serial_number` = '{$post['serial_number']}'");
@@ -639,7 +646,7 @@ class Drew
           $product_id = str_replace('gid://shopify/Product/', '', $item['product']['id']);
           $idAdded = 'add-'. date('jnygis').'-'. $product_id .'-'. $i;
 
-          $this->data->query("INSERT INTO tb_added_products(`idAdded`, `customer_id`, `product_id`, `email`, `agree_marketing`, `purchase_location`, `date_purchase`, `country`, `province`, `city`, `warranty_status`, `created`) VALUES ('$idAdded', '$customer_id', '$product_id', '{$resp['data']['order']['email']}', 1, 'Drew Website', '$date_purchase', '{$resp['data']['order']['billingAddress']['country']}', '{$resp['data']['order']['billingAddress']['province']}', '{$resp['data']['order']['billingAddress']['city']}', 'not', NOW())");
+          $this->data->query("INSERT INTO tb_added_products(`idAdded`, `customer_id`, `product_id`, `first_name`, `email`, `agree_marketing`, `purchase_location`, `date_purchase`, `country`, `province`, `city`, `warranty_status`, `created`) VALUES ('$idAdded', '$customer_id', '$product_id', '{$resp['data']['order']['displayName']}', '{$resp['data']['order']['email']}', 1, 'Drew Website', '$date_purchase', '{$resp['data']['order']['billingAddress']['country']}', '{$resp['data']['order']['billingAddress']['province']}', '{$resp['data']['order']['billingAddress']['city']}', 'not', NOW())");
         }
       }
     }
