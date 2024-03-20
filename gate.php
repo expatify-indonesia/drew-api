@@ -229,7 +229,7 @@ class Drew
     curl_close($curl);
     $respPart = json_decode($gidPartCurl, true);
     $reminder_date_timestamp = strtotime($reminder_period);
-    $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$post['idAdded']."&serial_number=".$post['serial_number']."&idProduct=".$post['idProduct']."&customer_id=".$post['idCustomer'];
+    $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$post['idAdded']."&serialNumber=".$post['serial_number']."&idProduct=".$post['idProduct']."&idCustomer=".$post['idCustomer'];
 
     $product_details = array(
       "email" => $post['email'],
@@ -374,7 +374,7 @@ class Drew
     $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('{$post['idAdded']}', 'reminder', 'Part Replacement Reminder', '$reminder_period', 'active', NOW())");
 
     $this->cuPersonCustomerIo($post['idCustomer'], $post['email']);
-  
+
     $gidProduct = 'gid://shopify/Product/' . $post['idProduct'];
 
     $curl = curl_init();
@@ -414,7 +414,7 @@ class Drew
     curl_close($curl);
     $respPart = json_decode($gidPartCurl, true);
     $reminder_date_timestamp = strtotime($reminder_period);
-    $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$post['idAdded']."&serial_number=".$post['serial_number']."&idProduct=".$post['idProduct']."&customer_id=".$post['idCustomer'];
+    $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$post['idAdded']."&serialNumber=".$post['serial_number']."&idProduct=".$post['idProduct']."&idCustomer=".$post['idCustomer'];
 
     $product_details = array(
       "email" => $post['email'],
@@ -555,7 +555,7 @@ class Drew
       curl_close($curl);
       $respPart = json_decode($gidPartCurl, true);
       $reminder_date_timestamp = strtotime($reminder_period);
-      $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$idAdded."&serial_number=".$post['serial_number']."&idProduct=".$post['model_unit']."&customer_id=".$post['id_customer'];
+      $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$idAdded."&serialNumber=".$post['serial_number']."&idProduct=".$post['model_unit']."&idCustomer=".$post['id_customer'];
 
       $product_details = array(
         "email" => $post['email'],
