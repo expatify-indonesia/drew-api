@@ -181,20 +181,32 @@ class Drew
 
     $this->data->query("UPDATE `tb_timelines` SET `date_replace` = '{$post['replaced']}', `reminder_status` = 'not' WHERE `idTimeline` = '{$post['idTimeline']}'");
 
+    $checkReminder = $this->data->query("SELECT `idTimeline` FROM `tb_timelines` WHERE `idAdded` = '{$post['idAdded']}' AND `type` = 'reminder' AND `reminder_status` = 'active' LIMIT 1");
+
+    if ($checkReminder->num_rows > 0) {
+      $resp = array(
+        'status' => 'failed',
+        'title' => 'Part replacement failed',
+        'message' => 'Sorry, there is error while replacing your part, please try again.'
+      );
+
+      header("Content-Type: application/json; charset=UTF-8");
+      echo json_encode($resp);
+      exit(0);
+    }
+
     $serialDates = mysqli_fetch_assoc($this->data->query("SELECT `reminder_period` FROM `tb_serial_numbers` WHERE `serial_number` = '{$post['serial_number']}' LIMIT 1"));
 
     $reminder_period = date('Y-m-d', strtotime($post['dateline'] . ' + ' . $serialDates['reminder_period'] . ' weeks'));
 
     $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('{$post['idAdded']}', 'reminder', 'Part Replacement Reminder', '$reminder_period', 'active', NOW())");
 
-    // If there is no $post['firstName'].
     if (empty($post['firstName'])) {
       $getAdded = mysqli_fetch_assoc($this->data->query("SELECT `first_name`, `email` FROM `tb_added_products` WHERE `idAdded` = '{$post['idAdded']}' LIMIT 1"));
       $post['email'] = $getAdded['email'];
       $post['firstName'] = $getAdded['first_name'];
     }
 
-    // Generate new token for email verification.
     $email_input_token = hash('crc32', strtotime($reminder_period) . $post['serial_number']);
 
     $this->data->query("UPDATE `tb_added_products` SET `email_input_status` = 1, `email_input_token` = '$email_input_token' WHERE `idAdded` = '{$post['idAdded']}'");
