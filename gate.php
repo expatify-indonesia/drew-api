@@ -250,7 +250,7 @@ class Drew
     curl_close($curl);
     $respPart = json_decode($gidPartCurl, true);
 
-    $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$post['idAdded']."&serialNumber=".$post['serial_number']."&idProduct=".$post['idProduct']."&idCustomer=".$post['idCustomer'];
+    $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&idAdded=".$post['idAdded']."&serialNumber=".$post['serial_number']."&idProduct=".$post['idProduct']."&idCustomer=".$post['idCustomer'];
 
     $product_details = array(
       "email" => $post['email'],
@@ -434,7 +434,7 @@ class Drew
     curl_close($curl);
     $respPart = json_decode($gidPartCurl, true);
 
-    $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$post['idAdded']."&serialNumber=".$post['serial_number']."&idProduct=".$post['idProduct']."&idCustomer=".$post['idCustomer'];
+    $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&idAdded=".$post['idAdded']."&serialNumber=".$post['serial_number']."&idProduct=".$post['idProduct']."&idCustomer=".$post['idCustomer'];
 
     $product_details = array(
       "email" => $post['email'],
@@ -574,7 +574,7 @@ class Drew
       curl_close($curl);
       $respPart = json_decode($gidPartCurl, true);
 
-      $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&email=".$post['email']."&idAdded=".$idAdded."&serialNumber=".$post['serial_number']."&idProduct=".$post['model_unit']."&idCustomer=".$post['id_customer'];
+      $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&idAdded=".$idAdded."&serialNumber=".$post['serial_number']."&idProduct=".$post['model_unit']."&idCustomer=".$post['id_customer'];
 
       $product_details = array(
         "email" => $post['email'],
