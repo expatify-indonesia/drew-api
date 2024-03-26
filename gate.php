@@ -329,7 +329,7 @@ class Drew
     } else {
       $resp = array(
         'status' => 'used',
-        'message' => 'The serial code is missing or has been used. Try again!'
+        'message' => 'Invalid serial code. Please try again!'
       );
     }
 
