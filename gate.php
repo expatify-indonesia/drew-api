@@ -317,7 +317,7 @@ class Drew
     $post = $this->clean($post);
     $resp = array();
 
-    $data = $this->data->query("SELECT idSerial FROM tb_serial_numbers WHERE `serial_number` = '{$post['serial_number']}' AND `status` = 'unused'");
+    $data = $this->data->query("SELECT idSerial FROM tb_serial_numbers WHERE `serial_number` = '{$post['serial_number']}' AND `sku` = '{$post['sku']}' AND `status` = 'unused'");
 
     if ($data->num_rows > 0) {
       $row = mysqli_fetch_assoc($data);
