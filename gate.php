@@ -253,6 +253,8 @@ class Drew
     $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&idAdded=".$post['idAdded']."&serialNumber=".$post['serial_number']."&idProduct=".$post['idProduct']."&idCustomer=".$post['idCustomer'];
 
     $product_details = array(
+      "idAdded" => $post['idAdded'],
+      "idTimeline" => $post['idTimeline'],
       "email" => $post['email'],
       "name" => $post['firstName'],
       "customer_id" => $post['idCustomer'],
@@ -394,6 +396,8 @@ class Drew
     $reminder_period = date('Y-m-d', strtotime($date_register . ' + ' . $serial['reminder_period'] . ' weeks'));
 
     $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('{$post['idAdded']}', 'reminder', 'Part Replacement Reminder', '$reminder_period', 'active', NOW())");
+    
+    $idTimeline = mysqli_insert_id($this->data);
 
     $this->cuPersonCustomerIo($post['idCustomer'], $post['email']);
 
@@ -439,6 +443,8 @@ class Drew
     $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&idAdded=".$post['idAdded']."&serialNumber=".$post['serial_number']."&idProduct=".$post['idProduct']."&idCustomer=".$post['idCustomer'];
 
     $product_details = array(
+      "idAdded" => $post['idAdded'],
+      "idTimeline" => $post['idTimeline'],
       "email" => $post['email'],
       "name" => $post['firstName'],
       "customer_id" => $post['idCustomer'],
@@ -534,6 +540,8 @@ class Drew
 
       $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `created`) VALUES ('$idAdded', 'info', 'Warranty activated', '$limited_warranty', NOW())");
 
+      $idTimeline = mysqli_insert_id($this->data);
+
       $reminder_period = date('Y-m-d', strtotime($date_purchase . ' + ' . $serialDates['reminder_period'] . ' weeks'));
 
       $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('$idAdded', 'reminder', 'Part Replacement Reminder', '$reminder_period', 'active', NOW())");
@@ -581,6 +589,8 @@ class Drew
       $input_date_link = "https://drewcare.id/pages/enter-part-replacement-date?token=".$email_input_token."&idAdded=".$idAdded."&serialNumber=".$post['serial_number']."&idProduct=".$post['model_unit']."&idCustomer=".$post['id_customer'];
 
       $product_details = array(
+        "idAdded" => $idAdded,
+        "idTimeline" => $idTimeline,
         "email" => $post['email'],
         "name" => $post['first_name'],
         "customer_id" => $post['id_customer'],
