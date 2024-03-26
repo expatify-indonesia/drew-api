@@ -275,8 +275,6 @@ class Drew
       )
     );
 
-    $json_product_details = json_encode($product_details);
-
     $curl = curl_init();
     curl_setopt_array($curl, array(
       CURLOPT_URL => $this->campaign_webhook,
@@ -287,11 +285,11 @@ class Drew
       CURLOPT_FOLLOWLOCATION => true,
       CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
       CURLOPT_CUSTOMREQUEST => 'POST',
-      CURLOPT_POSTFIELDS => $json_product_details,
+      CURLOPT_POSTFIELDS => json_encode($product_details),
       CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
     ));
 
-    $campaignWebhook = curl_exec($curl);
+    curl_exec($curl);
     curl_close($curl);
 
     if ($this->data->affected_rows > 0) {
@@ -304,7 +302,7 @@ class Drew
       $resp = array(
         "status" => "failed",
         "title" => "Part replacement failed",
-        "message" => "Sorry, there is error while replacing your part, please try again."
+        "message" => "There is error while replacing your part, please try again."
       );
     }
 
@@ -330,7 +328,7 @@ class Drew
     } else {
       $resp = array(
         'status' => 'used',
-        'message' => 'Sorry, the serial code is missing or has been used. Try again!'
+        'message' => 'The serial code is missing or has been used. Try again!'
       );
     }
 
@@ -345,7 +343,7 @@ class Drew
 
     $added = $this->data->query("SELECT `idAdded` FROM tb_added_products WHERE `email_input_token` = '{$post['token']}' AND `idAdded` = '{$post['idAdded']}' AND `email_input_status` = 1 LIMIT 1");
 
-    if ($added->num_rows > 0) {
+    if ($added->num_rows > 0){
       $timeline = $this->data->query("SELECT * FROM tb_timelines WHERE `idAdded` = '{$post['idAdded']}' AND `type` = 'reminder' AND `reminder_status` = 'active' LIMIT 1");
 
       if ($timeline->num_rows > 0) {
@@ -354,8 +352,7 @@ class Drew
           'status' => 'success',
           'message' => 'Token is valid',
           'idTimeline' => $row['idTimeline'],
-          'dateline' => $row['date'],
-          
+          'dateline' => $row['date']
         );
       } else {
         $resp = array(
@@ -398,7 +395,6 @@ class Drew
     $this->data->query("INSERT INTO tb_timelines(`idAdded`, `type`, `desc`, `date`, `reminder_status`, `created`) VALUES ('{$post['idAdded']}', 'reminder', 'Part Replacement Reminder', '$reminder_period', 'active', NOW())");
     
     $idTimeline = mysqli_insert_id($this->data);
-
     $this->cuPersonCustomerIo($post['idCustomer'], $post['email']);
 
     $gidProduct = 'gid://shopify/Product/' . $post['idProduct'];
@@ -465,8 +461,6 @@ class Drew
       )
     );
 
-    $json_product_details = json_encode($product_details);
-
     $curl = curl_init();
     curl_setopt_array($curl, array(
       CURLOPT_URL => $this->campaign_webhook,
@@ -477,11 +471,11 @@ class Drew
       CURLOPT_FOLLOWLOCATION => true,
       CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
       CURLOPT_CUSTOMREQUEST => 'POST',
-      CURLOPT_POSTFIELDS => $json_product_details,
+      CURLOPT_POSTFIELDS => json_encode($product_details),
       CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
     ));
 
-    $campaignWebhook = curl_exec($curl);
+    curl_exec($curl);
     curl_close($curl);
 
     $resp = array(
@@ -505,8 +499,6 @@ class Drew
       'email' => $email
     );
 
-    $json_data = json_encode($data);
-
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, "https://track.customer.io/api/v1/customers/{$identifier}");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -516,8 +508,8 @@ class Drew
       'Content-Type: application/json'
     ));
 
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $json_data);
-    $response = curl_exec($ch);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_exec($ch);
     curl_close($ch);
   }
 
@@ -611,8 +603,6 @@ class Drew
         )
       );
 
-      $json_product_details = json_encode($product_details);
-
       $curl = curl_init();
       curl_setopt_array($curl, array(
         CURLOPT_URL => $this->campaign_webhook,
@@ -623,11 +613,11 @@ class Drew
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
         CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS => $json_product_details,
+        CURLOPT_POSTFIELDS => json_encode($product_details),
         CURLOPT_HTTPHEADER => array('Content-Type: application/json'),
       ));
 
-      $campaignWebhook = curl_exec($curl);
+      curl_exec($curl);
       curl_close($curl);
 
       $resp = array(
@@ -677,7 +667,6 @@ class Drew
       }
     }
 
-    // Create/update person to Customer.io
     $this->cuPersonCustomerIo($customer_id, $resp['data']['order']['email']);
   }
 
@@ -712,7 +701,7 @@ class Drew
           "value": "'.$formattedAnswers.'",
           "type": "list.single_line_text_field"
         }
-    }',
+      }',
       CURLOPT_HTTPHEADER => $this->headers
     ));
 
@@ -736,10 +725,10 @@ class Drew
     exit(0);
   }
 
-  public function getRawResponse($post){
+  public function getRawResponse($post)
+  {
     $json_post = json_encode($post, true);
-
-    $this->data->query("INSERT INTO tb_raw_responses(`content`) VALUES ('$json_post')");
+    $this->data->query("INSERT INTO tb_raw_responses(`content`) VALUES('$json_post')");
   }
 }
 
