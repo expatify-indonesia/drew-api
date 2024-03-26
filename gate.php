@@ -177,6 +177,7 @@ class Drew
 
   public function partReplaced($post)
   {
+    $this->getRawResponse($post);
     $post = $this->clean($post);
 
     $this->data->query("UPDATE `tb_timelines` SET `date_replace` = '{$post['replaced']}', `reminder_status` = 'not' WHERE `idTimeline` = '{$post['idTimeline']}'");
@@ -374,6 +375,7 @@ class Drew
 
   public function registerWarranty($post)
   {
+    $this->getRawResponse($post);
     $post = $this->clean($post);
     $resp = array();
   
@@ -515,7 +517,9 @@ class Drew
 
   public function addProduct($post)
   {
+    $this->getRawResponse($post);
     $post = $this->clean($post);
+
     $idAdded = 'add-' . $post['model_unit'] . '-' . date('jnygis');
     $date_purchase = date('Y-m-d', strtotime($post['purchase_date']));
     $email_input_token = hash('crc32', $idAdded . $post['email'] . $date_purchase);
